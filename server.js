@@ -1,23 +1,20 @@
 // Create .env file for the mongodb connection
-
 require("dotenv").config();
 
-const express = require("express");
-
-const mongoose = require("mongoose");
-
-const v1Routes = require("./api/v1/routes/userRoutes");
-const v2Routes = require("./api/v2/routes/userRoutes");
+const express = require('express');
+const cors = require('cors');
+const analyticsRoutes = require('./routes/analyticsRoutes'); // Import the router
 
 const app = express();
+const PORT = process.env.PORT || 5000;
 
+app.use(cors());
 app.use(express.json());
 
-mongoose.connect(process.env.MONGO_URL)
-    .then(() => console.log("MongoDB connected"))
-    .catch(err => console.log(err));
+// Mount the analytics router
+// All routes inside analyticsRoutes will now be prefixed with '/api/analytics'
+app.use('/api/analytics', analyticsRoutes);
 
-app.use("api", v1Routes);
-app.use("api/v2", v2Routes);
-
-app.listen(5000, () => console.log("server running at port 5000"));
+app.listen(PORT, () => {
+    console.log(`Demand Forecasting Subsystem running on port ${PORT}`);
+});
