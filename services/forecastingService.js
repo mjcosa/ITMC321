@@ -1,4 +1,5 @@
-const { getInventoryData, getSalesData, getSupplierData } = require('./integrationService');
+const { getSalesData } = require('./salesService');
+const { getAllInventory } = require('./inventoryService');
 
 /**
  * Generates the forecast report.
@@ -7,7 +8,7 @@ const { getInventoryData, getSalesData, getSupplierData } = require('./integrati
 const generateForecastReport = async (uploadedData = null) => {
     try {
         // 1. Data Prioritization: Use uploaded CSV data if provided, otherwise fallback to APIs
-        const inventoryData = uploadedData?.inventory || await getInventoryData();
+        const inventoryData = uploadedData?.inventory || await getAllInventory();
         const salesData = uploadedData?.sales || await getSalesData();
 
         // 2. Processing Logic

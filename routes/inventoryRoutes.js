@@ -4,7 +4,8 @@ const { validateInventoryId } = require('../validators/inventoryValidators');
 
 const router = express.Router();
 
-router.get('/inventory', inventoryController.getAllInventory);
-router.get('/inventory/:id', validateInventoryId, inventoryController.getInventoryById);
+router.get('/', inventoryController.getAllInventory);
+router.get('/:id', validateInventoryId, inventoryController.getInventoryById);
+router.get('/inventory/', validateInventoryId, inventoryController.getInventoryById);
 
 module.exports = router;
