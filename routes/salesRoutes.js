@@ -3,6 +3,7 @@ const salesService = require('../services/salesService');
 
 const router = express.Router();
 
-router.get('/', salesService.getSalesData);
+router.get('/', salesService.getPaymentData);
+router.get('/', salesService.getOrderData);
 
 module.exports = router;

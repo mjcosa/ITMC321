@@ -13,7 +13,7 @@ const generateForecastReport = async (uploadedData = null) => {
 
         // 2. Processing Logic
         // Ensure numerical values from CSVs are parsed as integers/floats, as CSVs default to strings
-        const targetProductId = "PROD-102";
+        const targetProductId = "BAG";
         const targetProduct = inventoryData.find(p => p.product_id === targetProductId);
         
         const currentStock = targetProduct ? parseInt(targetProduct.current_stock, 10) : 0;

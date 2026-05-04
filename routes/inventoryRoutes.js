@@ -6,6 +6,5 @@ const router = express.Router();
 
 router.get('/', inventoryController.getAllInventory);
 router.get('/:id', validateInventoryId, inventoryController.getInventoryById);
-router.get('/inventory/', validateInventoryId, inventoryController.getInventoryById);
 
 module.exports = router;
