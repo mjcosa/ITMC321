@@ -1,7 +1,7 @@
 // Fetch past records and customer purchase history
 const getSalesData = async () => {
     console.log("Fetching from Customer & Order Management Subsystem...");
-    fetch('/api/v1/sales')
+    fetch('https://customer-and-order-mgmt-system-back.vercel.app/api/payments/')
     .then(response => {
         if (!response.ok) { // Check if the response was successful
         throw new Error('Network response was not ok');
