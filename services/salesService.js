@@ -2,6 +2,7 @@
 const getPaymentData = async () => {
     console.log("Fetching from Customer & Order Management Subsystem...");
     const response = await fetch('https://customer-and-order-mgmt-system-back.vercel.app/api/payments')
+
     if (!response.ok) {
     throw new Error(`Upstream service returned ${response.status}`);
   }
@@ -12,6 +13,7 @@ const getPaymentData = async () => {
 const getOrderData = async () => {
     console.log("Fetching from Customer & Order Management Subsystem...");
     const response = await fetch('https://customer-and-order-mgmt-system-back.vercel.app/api/orders')
+
     if (!response.ok) {
         throw new Error(`Upstream service returned ${response.status}`);
     }
@@ -19,8 +21,12 @@ const getOrderData = async () => {
     return response.json();
 };
 
+const getSalesData = async () => {
+    return getOrderData();
+};
 
 module.exports = {
     getPaymentData,
-    getOrderData
+    getOrderData,
+    getSalesData
 };

@@ -1,7 +1,7 @@
 const express = require('express');
-const { generateForecastReport } = require('../services/forecastingService');
+const forecastController = require('../controller/forecastController');
 const router = express.Router();
 
-router.get('/', generateForecastReport);
+router.get('/', forecastController.getForecastReport);
 
 module.exports = router;
