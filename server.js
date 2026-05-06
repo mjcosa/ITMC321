@@ -13,9 +13,9 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
-app.use('/api/v1/analytics/forecast/', analyticsRoutes);
-app.use('/api/v1/analytics/inventory/', inventoryRoutes);
-app.use('/api/v1/analytics/sales/', salesRoutes);
+app.use('/api/v1/forecast/', analyticsRoutes);
+app.use('/api/v1/inventory/', inventoryRoutes);
+app.use('/api/v1/sales/', salesRoutes);
 
 app.listen(PORT, () => {
     console.log(`Demand Forecasting Subsystem running on port ${PORT}`);
