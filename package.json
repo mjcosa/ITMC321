@@ -15,7 +15,7 @@
   "type": "commonjs",
   "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "jest --detectOpenHandles --forceExit",
     "start": "node server.js"
   },
   "dependencies": {
@@ -23,7 +23,11 @@
     "csv-parser": "^3.2.0",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
-    "mongoose": "^9.6.0",
+    "mongoose": "^9.6.2",
+    "multer": "^2.1.1",
     "stream": "^0.0.3"
+  },
+  "devDependencies": {
+    "jest": "^30.4.2"
   }
 }
