@@ -9,6 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
 <body>
@@ -48,6 +49,21 @@
                     <div class="card-content">
                         <h3>Sales Orders</h3>
                         <p>Fetch latest order data</p>
+                    </div>
+                </button>
+
+                <button id="btnSalesGraph" class="card">
+                    <div class="card-icon teal">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M3 3v18h18" />
+                            <path d="M18 17V9" />
+                            <path d="M13 17V5" />
+                            <path d="M8 17v-3" />
+                        </svg>
+                    </div>
+                    <div class="card-content">
+                        <h3>Sales Graph</h3>
+                        <p>Visualize sales trends</p>
                     </div>
                 </button>
 
@@ -108,6 +124,36 @@
                 <div class="output-body">
                     <div id="result">
                         <div class="empty-state">Select an option above to load data...</div>
+                    </div>
+                    <div id="salesGraphContainer" style="display: none;">
+                        <div class="graph-controls">
+                            <div class="control-group">
+                                <label for="timeRange">Time Range:</label>
+                                <select id="timeRange">
+                                    <option value="7">Last 7 days</option>
+                                    <option value="30">Last 30 days</option>
+                                    <option value="90">Last 90 days</option>
+                                </select>
+                            </div>
+                            <button id="refreshGraph" class="refresh-btn">Refresh</button>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="salesChart"></canvas>
+                        </div>
+                        <div class="graph-stats">
+                            <div class="stat-item">
+                                <span class="stat-label">Total Sales:</span>
+                                <span id="totalSales" class="stat-value">$0</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Average Order:</span>
+                                <span id="avgOrder" class="stat-value">$0</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Total Orders:</span>
+                                <span id="totalOrders" class="stat-value">0</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </section>
