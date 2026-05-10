@@ -23,14 +23,13 @@ const forecastSchema = new mongoose.Schema({
   },
   stockoutRisk: { 
     type: String, 
-    enum: ['Low', 'Medium', 'High'], // Validates inputs strictly
+    enum: ['Low', 'Medium', 'High'],
     required: true 
   },
   modelUsed: { 
     type: String, 
     required: true 
   },
-  // Storing the graph data array directly in the document!
   graphData: [{
     date: { type: String },
     historical_sales: { type: Number }
