@@ -6,6 +6,7 @@ const path = require('path');
 const inventoryRoutes = require('./routes/inventoryRoutes'); 
 const analyticsRoutes = require('./routes/analyticsRoutes'); 
 const salesRoutes = require('./routes/salesRoutes'); 
+const pricingRoutes = require('./routes/pricingRoutes');
 
 dotenv.config();
 
@@ -18,9 +19,10 @@ app.use(express.json());
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.use('/api/v1/forecast/', analyticsRoutes);
-app.use('/api/v1/inventory/', inventoryRoutes);
-app.use('/api/v1/sales/', salesRoutes);
+app.use('/api/forecast/', analyticsRoutes);
+app.use('/api/inventory/', inventoryRoutes);
+app.use('/api/sales/', salesRoutes);
+app.use('/api/pricing/', pricingRoutes);
 
 app.get(/.*/, (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));

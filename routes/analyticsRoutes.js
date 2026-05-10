@@ -1,6 +1,7 @@
 const express = require('express');
 const multer = require('multer');
 const forecastingController = require('../controllers/forecastController');
+const pricingController = require('../controllers/pricingController');
 
 const router = express.Router();
 

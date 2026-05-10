@@ -1,5 +1,5 @@
 (function () {
-  const apiBase = "/api/v1";
+  const apiBase = "/api";
   const resultEl = document.getElementById("result");
 
   let currentDataArray = [];
@@ -230,10 +230,10 @@
   document.getElementById("btnForecast").addEventListener("click", async () => {
     showLoading("Loading forecast...");
     try {
-      const data = await get(`${apiBase}/forecast/`);
+      const data = await get(`${apiBase}/forecast/generate-report`);
       show(data);
     } catch (e) {
       showError(e);
-    }
-  });
+    }                                   
+  });                                                         
 })();
