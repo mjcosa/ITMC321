@@ -1,6 +1,8 @@
 (function () {
   const apiBase = "/api";
   const resultEl = document.getElementById("result");
+  const salesGraphContainer = document.getElementById("salesGraphContainer");
+  let salesChart = null;
 
   let currentDataArray = [];
   let currentHeaders = [];
@@ -29,6 +31,13 @@
   }
 
   function show(obj) {
+    // Hide sales graph when showing other data
+    hideSalesGraph();
+    if (salesChart) {
+      salesChart.destroy();
+      salesChart = null;
+    }
+    
     resultEl.innerHTML = "";
     if (paginationControls) paginationControls.style.display = "none";
 
@@ -180,11 +189,21 @@
   }
 
   function showError(err) {
+    hideSalesGraph();
+    if (salesChart) {
+      salesChart.destroy();
+      salesChart = null;
+    }
     if (paginationControls) paginationControls.style.display = "none";
     resultEl.innerHTML = `<div class="error-state">Error: ${err.message || err}</div>`;
   }
 
   function showLoading(msg) {
+    hideSalesGraph();
+    if (salesChart) {
+      salesChart.destroy();
+      salesChart = null;
+    }
     if (paginationControls) paginationControls.style.display = "none";
     resultEl.innerHTML = `<div class="loading-state">${msg}</div>`;
   }
@@ -234,6 +253,142 @@
       show(data);
     } catch (e) {
       showError(e);
-    }                                   
-  });                                                         
+    }
+  });
+
+  // Sales Graph functionality
+  function showSalesGraph() {
+    if (paginationControls) paginationControls.style.display = "none";
+    resultEl.style.display = "none";
+    salesGraphContainer.style.display = "block";
+  }
+
+  function hideSalesGraph() {
+    salesGraphContainer.style.display = "none";
+    resultEl.style.display = "block";
+  }
+
+  function processSalesData(orders) {
+    const salesByDate = {};
+    let totalSales = 0;
+    let totalOrders = 0;
+
+    orders.forEach(order => {
+      const date = new Date(order.orderDate || order.createdAt || Date.now());
+      const dateKey = date.toLocaleDateString();
+      
+      const orderTotal = parseFloat(order.total || order.amount || 0);
+      
+      if (!salesByDate[dateKey]) {
+        salesByDate[dateKey] = 0;
+      }
+      salesByDate[dateKey] += orderTotal;
+      totalSales += orderTotal;
+      totalOrders++;
+    });
+
+    return {
+      salesByDate,
+      totalSales,
+      totalOrders,
+      averageOrder: totalOrders > 0 ? totalSales / totalOrders : 0
+    };
+  }
+
+  function createChart(labels, data) {
+    const ctx = document.getElementById('salesChart').getContext('2d');
+    
+    if (salesChart) {
+      salesChart.destroy();
+    }
+
+    const chartConfig = {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Sales ($)',
+          data: data,
+          backgroundColor: 'rgba(37, 99, 235, 0.1)',
+          borderColor: 'rgba(37, 99, 235, 1)',
+          borderWidth: 2,
+          tension: 0.4,
+          fill: true
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: false
+          },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                return '$' + context.parsed.y?.toFixed(2);
+              }
+            }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              callback: function(value) {
+                return '$' + value.toFixed(0);
+              }
+            }
+          }
+        }
+      }
+    };
+
+    salesChart = new Chart(ctx, chartConfig);
+  }
+
+  function updateStats(stats) {
+    document.getElementById('totalSales').textContent = '$' + stats.totalSales.toFixed(2);
+    document.getElementById('avgOrder').textContent = '$' + stats.averageOrder.toFixed(2);
+    document.getElementById('totalOrders').textContent = stats.totalOrders.toString();
+  }
+
+  async function loadSalesGraph() {
+    showSalesGraph();
+    
+    const timeRange = parseInt(document.getElementById('timeRange').value);
+    
+    try {
+      const orders = await get(`${apiBase}/sales/orders`);
+      
+      if (!Array.isArray(orders)) {
+        throw new Error('Invalid sales data format');
+      }
+
+      const processedData = processSalesData(orders);
+      
+      // Sort dates and get recent data based on time range
+      const sortedDates = Object.keys(processedData.salesByDate).sort((a, b) => 
+        new Date(a) - new Date(b)
+      );
+      
+      const recentDates = sortedDates.slice(-timeRange);
+      const recentData = recentDates.map(date => processedData.salesByDate[date]);
+      
+      createChart(recentDates, recentData);
+      updateStats(processedData);
+      
+    } catch (error) {
+      console.error('Error loading sales graph:', error);
+      showError(error);
+      hideSalesGraph();
+    }
+  }
+
+  // Event listeners for sales graph
+  document.getElementById("btnSalesGraph")?.addEventListener("click", loadSalesGraph);
+  
+  document.getElementById("refreshGraph")?.addEventListener("click", loadSalesGraph);
+  
+  document.getElementById("timeRange")?.addEventListener("change", loadSalesGraph);
 })();
