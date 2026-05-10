@@ -7,7 +7,7 @@ const inventoryRoutes = require('./routes/inventoryRoutes');
 const analyticsRoutes = require('./routes/analyticsRoutes'); 
 const salesRoutes = require('./routes/salesRoutes'); 
 const pricingRoutes = require('./routes/pricingRoutes');
-
+const cronRoutes = require('./routes/cronRoutes');
 dotenv.config();
 
 const app = express();
@@ -23,6 +23,7 @@ app.use('/api/forecast/', analyticsRoutes);
 app.use('/api/inventory/', inventoryRoutes);
 app.use('/api/sales/', salesRoutes);
 app.use('/api/pricing/', pricingRoutes);
+app.use('/api/job/cron', cronRoutes);
 
 app.get(/.*/, (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));

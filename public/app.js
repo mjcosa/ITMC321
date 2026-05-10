@@ -268,16 +268,21 @@
     resultEl.style.display = "block";
   }
 
-  function processSalesData(orders) {
+ function processSalesData(orders) {
     const salesByDate = {};
     let totalSales = 0;
     let totalOrders = 0;
 
     orders.forEach(order => {
-      const date = new Date(order.orderDate || order.createdAt || Date.now());
+      // Checks if payment is done or confirmed to count it as a 'sale'
+      if (order.payment_status && order.payment_status !== 'Confirmed') {
+        return; 
+      }
+
+      const date = new Date(order.payment_date || order.createdAt || Date.now());
       const dateKey = date.toLocaleDateString();
       
-      const orderTotal = parseFloat(order.total || order.amount || 0);
+      const orderTotal = parseFloat(order.payment_amount || order.total || order.amount || 0);
       
       if (!salesByDate[dateKey]) {
         salesByDate[dateKey] = 0;
