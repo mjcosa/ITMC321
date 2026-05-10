@@ -1,20 +1,21 @@
-// Create .env file for the mongodb connection
-// require("dotenv").config();
-
 const express = require('express');
+const dotenv = require('dotenv');
+const connectDB = require('./config/db');
 const cors = require('cors');
 const path = require('path');
 const inventoryRoutes = require('./routes/inventoryRoutes'); 
 const analyticsRoutes = require('./routes/analyticsRoutes'); 
 const salesRoutes = require('./routes/salesRoutes'); 
 
+dotenv.config();
+
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+connectDB();
 app.use(cors());
 app.use(express.json());
 
-// Serve frontend static files from /public
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/api/v1/forecast/', analyticsRoutes);
