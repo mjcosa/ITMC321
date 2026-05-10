@@ -1,41 +1,73 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Login - Analytics</title>
-    <link rel="stylesheet" href="styles.css">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login / Signup</title>
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    <link rel="stylesheet" href="login.css" />
 </head>
-<body class="login-body">
-    <div class="login-container">
-        <div class="login-header">
-            <div class="logo">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>
-                <h1>AdminAnalytics</h1>
-            </div>
-            <p>Sign in to your account</p>
+
+<body>
+    <div id="notification" class="notification"></div>
+    <div class="container">
+        <div class="form-box login">
+            <form action="#">
+                <h1>Login</h1>
+                <div class="input-box">
+                    <div class="indicator">Email Address:</div>
+                    <input type="text" placeholder="Email" required />
+                </div>
+                <div class="input-box">
+                    <div class="indicator">Password:</div>
+                    <input type="password" placeholder="Password" required />
+                </div>
+                <div class="forgot-link">
+                    <a href="#">Forgot Password?</a>
+                </div>
+                <button type="submit" class="btn" onclick="window.location.href='home.html'">Login</button>
+            </form>
         </div>
-        <form class="login-form" action="index.html" method="GET">
-            <div class="form-group">
-                <label for="email">Email</label>
-                <input type="email" id="email" name="email" placeholder="admin@example.com" required>
+
+        <div class="form-box register">
+            <form action="#" onsubmit="return validateRegisterForm()">
+                <h1>Registration</h1>
+                <div class="input-box">
+                    <div class="indicator">Username:</div>
+                    <input type="text" placeholder="Username" required />
+                </div>
+                <div class="input-box">
+                    <div class="indicator">Email Address:</div>
+                    <input type="email" placeholder="Email" required />
+                </div>
+                <div class="input-box">
+                    <div class="indicator">Password:</div>
+                    <input type="password" id="register-password" placeholder="Password" required />
+                </div>
+                <div class="input-box">
+                    <div class="indicator">Confirm Password:</div>
+                    <input type="password" id="register-confirm-password" placeholder="Confirm Password" required />
+                </div>
+                <button type="submit" class="btn">Register</button>
+            </form>
+        </div>
+
+        <div class="toggle-box">
+            <div class="toggle-panel toggle-left">
+                <h1>Hello, Welcome!</h1>
+                <p>Don't have an account?</p>
+                <button class="btn register-btn">Register</button>
             </div>
-            <div class="form-group">
-                <label for="password">Password</label>
-                <input type="password" id="password" name="password" placeholder="••••••••" required>
+            <div class="toggle-panel toggle-right">
+                <h1>Welcome Back!</h1>
+                <p>Already have an account?</p>
+                <button class="btn login-btn">Login</button>
             </div>
-            <div class="form-options">
-                <label class="remember-me">
-                    <input type="checkbox" name="remember">
-                    <span>Remember me</span>
-                </label>
-                <a href="#" class="forgot-password">Forgot password?</a>
-            </div>
-            <button type="submit" class="login-button">Sign In</button>
-            <div class="register-prompt">
-                <p>Don't have an account? <a href="register.html">Register here</a></p>
-            </div>
-        </form>
+        </div>
     </div>
+
+    <script src="login.js"></script>
 </body>
+
 </html>
