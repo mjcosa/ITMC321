@@ -274,23 +274,29 @@
     let totalOrders = 0;
 
     orders.forEach(order => {
-      // Checks if payment is done or confirmed to count it as a 'sale'
-      if (order.payment_status && order.payment_status !== 'Confirmed') {
+      const status = (order.payment_status || order.status || '').toString().trim().toLowerCase();
+      
+      if (status && status !== 'confirmed' && status !== 'completed') {
         return; 
       }
 
-      const date = new Date(order.payment_date || order.createdAt || Date.now());
+      const dateString = order.payment_date || order.createdAt || order.orderDate || Date.now();
+      const date = new Date(dateString);
       const dateKey = date.toLocaleDateString();
       
-      const orderTotal = parseFloat(order.payment_amount || order.total || order.amount || 0);
+      const rawAmount = order.payment_amount ?? order.total ?? order.amount ?? order.total_amount ?? 0;
+      const orderTotal = parseFloat(rawAmount);
       
       if (!salesByDate[dateKey]) {
         salesByDate[dateKey] = 0;
       }
+      
       salesByDate[dateKey] += orderTotal;
       totalSales += orderTotal;
       totalOrders++;
     });
+
+    console.log("Final Calculated Totals:", { totalSales, totalOrders });
 
     return {
       salesByDate,
