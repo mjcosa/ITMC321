@@ -12,12 +12,24 @@ const fetchSubsystemData = async (uploadedData) => {
 
 // TRANSFORM
 const cleanAndTransformData = (rawInventory, rawSales) => {
-  const inventory = rawInventory.map(item => ({
-    productId: item.product_id || item.productId || item.sku || 'UNKNOWN',
-    productName: item.name || item.product_name || 'Unnamed Product',
-    currentStock: Number(item.current_stock ?? item.currentStock ?? item.stock ?? 0) || 0,
-    price: Number(item.price || item.currentPrice || item.cost || 10.00) 
-  })).filter(item => item.productId !== 'UNKNOWN');
+  const inventoryMap = {};
+  rawInventory.forEach(item => {
+    const productId = item.product_id || item.productId || item.sku || 'UNKNOWN';
+    if (productId === 'UNKNOWN') return;
+    
+    if (!inventoryMap[productId]) {
+      inventoryMap[productId] = {
+        productId: productId,
+        productName: item.name || item.product_name || 'Unnamed Product',
+        currentStock: 0,
+        price: Number(item.price || item.currentPrice || item.cost || 10.00) 
+      };
+    }
+    
+    inventoryMap[productId].currentStock += Number(item.current_stock ?? item.currentStock ?? item.stock ?? 0) || 0;
+  });
+  
+  const inventory = Object.values(inventoryMap);
 
   const sales = rawSales.map(sale => {
     let rawDate = sale.date || sale.created_at || sale.timestamp || new Date();
@@ -104,26 +116,19 @@ const calculateForecasts = async (uploadedData = null) => {
         historical_sales: salesRecord.dailyData[date]
       }));
 
-    // PUSH TO API RESPONSE ARRAY
+    // PUSH TO API RESPONSE ARRAY (FLATTENED)
     forecastResults.push({
       product_id: product.productId,
       product_name: product.productName,
       current_stock: product.currentStock,
       current_price: currentPrice,
-      graph_data: graphData, 
-      forecast: {
-        predicted_demand_next_30_days: predictedDemand,
-        recommendation: recommendation,
-        suggested_restock_qty: restockAmount
-      },
-      pricing: {
-        suggested_price: suggestedPrice,
-        reason: strategyReason
-      },
-      analytics: {
-        total_historical_sales: totalSales,
-        stockout_risk: stockoutRisk 
-      }
+      forecast_predicted_demand_next_30_days: predictedDemand,
+      forecast_recommendation: recommendation,
+      forecast_suggested_restock_qty: restockAmount,
+      pricing_suggested_price: suggestedPrice,
+      pricing_reason: strategyReason,
+      analytics_total_historical_sales: totalSales,
+      analytics_stockout_risk: stockoutRisk
     });
 
     // PUSH TO DATABASE ARRAYS
@@ -161,6 +166,13 @@ const calculateForecasts = async (uploadedData = null) => {
   } catch (dbError) {
     console.error('Error batch saving to database:', dbError);
   }
+
+  // Sort the results by product_id to ensure sequential row ordering (e.g., P001, P002, etc.)
+  forecastResults.sort((a, b) => {
+    const idA = String(a.product_id || '');
+    const idB = String(b.product_id || '');
+    return idA.localeCompare(idB, undefined, { numeric: true, sensitivity: 'base' });
+  });
 
   return forecastResults;
 };
