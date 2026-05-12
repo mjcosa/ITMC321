@@ -20,6 +20,7 @@
       if (currentPage > 1) {
         currentPage--;
         if (currentView === "orders") renderOrdersTable();
+        else if (currentView === "forecast") renderForecastTable();
         else renderTable();
       }
     });
@@ -28,6 +29,7 @@
       if (currentPage < totalPages) {
         currentPage++;
         if (currentView === "orders") renderOrdersTable();
+        else if (currentView === "forecast") renderForecastTable();
         else renderTable();
       }
     });
@@ -471,28 +473,159 @@
     showLoading("Loading forecast...");
     try {
       const rawData = await get(`${apiBase}/forecast/`);
-      
-      let dataArray = [];
-      if (Array.isArray(rawData)) {
-        dataArray = rawData;
-      } else if (rawData && Array.isArray(rawData.data)) {
-        dataArray = rawData.data;
-      } else if (rawData) {
-        dataArray = [rawData];
-      }
-      
-      const mappedData = dataArray.map(item => ({
-        product_id: item.product_id || item.productId || "-",
-        product_name: item.product_name || item.productName || "-",
-        target_period: "Next 30 Days",
-        predicted_demand: item.forecast_predicted_demand_next_30_days ?? item.predictedDemand ?? "-",
-        suggested_restock_qty: item.forecast_suggested_restock_qty ?? item.suggestedRestockQty ?? "-",
-        stockout_risk: item.analytics_stockout_risk ?? item.stockoutRisk ?? "-"
-      }));
-
-      show(mappedData);
+      showForecast(rawData);
     } catch (e) {
       showError(e);
+    }
+  });
+
+  function showForecast(rawData) {
+    hideSalesGraph();
+    if (salesChart) {
+      salesChart.destroy();
+      salesChart = null;
+    }
+    
+    resultEl.innerHTML = "";
+    if (paginationControls) paginationControls.style.display = "none";
+
+    let dataArray = [];
+    if (Array.isArray(rawData)) {
+      dataArray = rawData;
+    } else if (rawData && Array.isArray(rawData.data)) {
+      dataArray = rawData.data;
+    } else if (rawData) {
+      dataArray = [rawData];
+    }
+
+    if (!dataArray || dataArray.length === 0) {
+      resultEl.innerHTML = '<div class="empty-state">No forecast data available.</div>';
+      return;
+    }
+
+    currentView = "forecast";
+    currentDataArray = dataArray;
+    currentPage = 1;
+    renderForecastTable();
+  }
+
+  function renderForecastTable() {
+    resultEl.innerHTML = "";
+
+    if (currentDataArray.length === 0) return;
+
+    const totalPages = Math.ceil(currentDataArray.length / pageSize);
+    if (paginationControls) {
+      if (totalPages > 1) {
+        paginationControls.style.display = "flex";
+        pageInfo.textContent = `Page ${currentPage} of ${totalPages}`;
+        btnPrev.disabled = currentPage === 1;
+        btnNext.disabled = currentPage === totalPages;
+        btnPrev.style.opacity = currentPage === 1 ? "0.5" : "1";
+        btnPrev.style.cursor = currentPage === 1 ? "default" : "pointer";
+        btnNext.style.opacity = currentPage === totalPages ? "0.5" : "1";
+        btnNext.style.cursor = currentPage === totalPages ? "default" : "pointer";
+      } else {
+        paginationControls.style.display = "none";
+      }
+    }
+
+    const table = document.createElement("table");
+    table.className = "data-table";
+
+    const thead = document.createElement("thead");
+    thead.innerHTML = `
+      <tr>
+        <th>Product Id</th>
+        <th>Product Name</th>
+        <th>Target Period</th>
+        <th>Predicted Demand</th>
+        <th>Suggested Restock Qty</th>
+        <th>Stockout Risk</th>
+        <th>Action</th>
+      </tr>
+    `;
+    table.appendChild(thead);
+
+    const tbody = document.createElement("tbody");
+
+    const startIndex = (currentPage - 1) * pageSize;
+    const endIndex = Math.min(startIndex + pageSize, currentDataArray.length);
+    const paginatedData = currentDataArray.slice(startIndex, endIndex);
+
+    paginatedData.forEach(item => {
+      const tr = document.createElement("tr");
+      
+      const productId = item.product_id || item.productId || "-";
+      const productName = item.product_name || item.productName || "-";
+      const targetPeriod = "Next 30 Days";
+      const predictedDemand = item.forecast_predicted_demand_next_30_days ?? item.predictedDemand ?? "-";
+      const suggestedRestockQty = item.forecast_suggested_restock_qty ?? item.suggestedRestockQty ?? "-";
+      const stockoutRisk = item.analytics_stockout_risk ?? item.stockoutRisk ?? "-";
+
+      tr.innerHTML = `
+        <td>${productId}</td>
+        <td>${productName}</td>
+        <td>${targetPeriod}</td>
+        <td>${predictedDemand}</td>
+        <td>${suggestedRestockQty}</td>
+        <td>${stockoutRisk}</td>
+        <td><button class="view-forecast-btn">View Details</button></td>
+      `;
+
+      tr.querySelector('.view-forecast-btn').addEventListener('click', () => {
+        showForecastPopup(item);
+      });
+
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    resultEl.appendChild(table);
+  }
+
+  function showForecastPopup(item) {
+    const modal = document.getElementById('forecastModal');
+    const modalContent = document.getElementById('forecastDetailsContent');
+    
+    // Formatting Sales History
+    const salesHistoryHtml = Object.entries(item.salesHistory || item.sales_history || {}).map(([period, data]) => {
+      if (typeof data !== 'object' || data === null) return '';
+      const periodDataHtml = Object.entries(data).map(([key, value]) => `<li><strong>${key}:</strong> ${value}</li>`).join('');
+      return `<h4>${period.charAt(0).toUpperCase() + period.slice(1)}</h4><ul>${periodDataHtml}</ul>`;
+    }).join('') || '<p>No sales history available.</p>';
+
+    modalContent.innerHTML = `
+      <div style="margin-bottom: 16px;">
+        <strong>Product ID:</strong> ${item.product_id || item.productId || '-'}<br/>
+        <strong>Product Name:</strong> ${item.product_name || item.productName || '-'}<br/>
+        <strong>Current Stock:</strong> ${item.current_stock ?? item.currentStock ?? '-'}<br/>
+        <strong>Current Price:</strong> $${item.current_price ?? item.currentPrice ?? '-'}<br/>
+      </div>
+      <div style="margin-bottom: 16px;">
+        <strong>Forecast Recommendation:</strong> ${item.forecast_recommendation || item.recommendation || '-'}<br/>
+        <strong>Suggested Price:</strong> $${item.pricing_suggested_price ?? item.suggestedPrice ?? '-'}<br/>
+        <strong>Pricing Reason:</strong> ${item.pricing_reason ?? item.strategyReason ?? '-'}<br/>
+        <strong>Total Historical Sales:</strong> ${item.analytics_total_historical_sales ?? item.totalHistoricalSales ?? '-'}<br/>
+      </div>
+      <h3>Sales History</h3>
+      ${salesHistoryHtml}
+    `;
+
+    modal.style.display = 'block';
+  }
+
+  // Close Forecast modal functionality
+  const closeForecastModalBtn = document.getElementById('closeForecastModal');
+  if (closeForecastModalBtn) {
+    closeForecastModalBtn.addEventListener('click', () => {
+      document.getElementById('forecastModal').style.display = 'none';
+    });
+  }
+
+  window.addEventListener('click', (event) => {
+    const forecastModal = document.getElementById('forecastModal');
+    if (event.target == forecastModal) {
+      forecastModal.style.display = 'none';
     }
   });
 
