@@ -10,6 +10,11 @@
   const pageSize = 10;
   let currentView = "default";
 
+  function hideForecastHistory() {
+  const el = document.getElementById("forecastSalesHistory");
+  if (el) el.style.display = "none";
+}
+
   const paginationControls = document.getElementById("pagination-controls");
   const btnPrev = document.getElementById("btnPrev");
   const btnNext = document.getElementById("btnNext");
@@ -252,15 +257,17 @@
     return res.json();
   }
 
-  document.getElementById("btnOrders").addEventListener("click", async () => {
-    showLoading("Loading orders...");
-    try {
-      const data = await get(`${apiBase}/sales/orders`);
-      showOrders(data);
-    } catch (e) {
-      showError(e);
-    }
-  });
+document.getElementById("btnOrders").addEventListener("click", async () => {
+  hideForecastHistory();
+  showLoading("Loading orders...");
+
+  try {
+    const data = await get(`${apiBase}/sales/orders`);
+    showOrders(data);
+  } catch (e) {
+    showError(e);
+  }
+});
 
   function showOrders(orders) {
     hideSalesGraph();
@@ -410,225 +417,47 @@
   });
 
   document.getElementById("btnPayments").addEventListener("click", async () => {
-    showLoading("Loading payments...");
-    try {
-      const rawData = await get(`${apiBase}/sales/payments`);
-      
-      let dataArray = [];
-      if (Array.isArray(rawData)) {
-        dataArray = rawData;
-      } else if (rawData && Array.isArray(rawData.data)) {
-        dataArray = rawData.data;
-      } else if (rawData) {
-        dataArray = [rawData];
-      }
-      
-      const mappedData = dataArray.map(item => ({
-        payment_id: item.payment_id || item.paymentId || item._id || "-",
-        order_id: item.order_id || item.orderId || "-",
-        payment_method: item.payment_method || item.paymentMethod || "-",
-        payment_amount: item.payment_amount ?? item.paymentAmount ?? "-",
-        payment_status: item.payment_status || item.paymentStatus || "-",
-        transaction_reference: item.transaction_reference || item.transactionReference || item.transaction_id || "-",
-        payment_date: item.payment_date || item.paymentDate || item.createdAt || "-"
-      }));
+  hideForecastHistory();
+  showLoading("Loading payments...");
 
-      show(mappedData);
+  try {
+    const data = await get(`${apiBase}/sales/payments`);
+    show(data);
+  } catch (e) {
+    showError(e);
+  }
+});
+
+document.getElementById("btnInventory")
+  .addEventListener("click", async () => {
+
+    hideForecastHistory();
+
+    showLoading("Loading inventory...");
+    try {
+      const data = await get(`${apiBase}/inventory/`);
+      show(data);
     } catch (e) {
       showError(e);
     }
   });
 
-  document
-    .getElementById("btnInventory")
-    .addEventListener("click", async () => {
-      showLoading("Loading inventory...");
-      try {
-        const rawData = await get(`${apiBase}/inventory/`);
-        
-        let dataArray = [];
-        if (Array.isArray(rawData)) {
-          dataArray = rawData;
-        } else if (rawData && Array.isArray(rawData.data)) {
-          dataArray = rawData.data;
-        } else if (rawData) {
-          dataArray = [rawData];
-        }
+document.getElementById("btnForecast").addEventListener("click", async () => {
+  showLoading("Loading forecast...");
 
-        const mappedData = dataArray.map(item => {
-          const newItem = { ...item };
-          newItem.product_name = item.product_name || item.productName || item.name || "Unnamed Product";
-          delete newItem.name;
-          delete newItem.productName;
-          return newItem;
-        });
+  hideSalesGraph();
 
-        show(mappedData);
-      } catch (e) {
-        showError(e);
-      }
-    });
+  try {
+    const data = await get(`${apiBase}/forecast/`);
+    show(data);
 
-  document.getElementById("btnForecast").addEventListener("click", async () => {
-    showLoading("Loading forecast...");
-    try {
-      const rawData = await get(`${apiBase}/forecast/`);
-      showForecast(rawData);
-    } catch (e) {
-      showError(e);
-    }
-  });
+    const history = document.getElementById("forecastSalesHistory");
+    if (history) history.style.display = "block";
 
-  function showForecast(rawData) {
-    hideSalesGraph();
-    if (salesChart) {
-      salesChart.destroy();
-      salesChart = null;
-    }
-    
-    resultEl.innerHTML = "";
-    if (paginationControls) paginationControls.style.display = "none";
-
-    let dataArray = [];
-    if (Array.isArray(rawData)) {
-      dataArray = rawData;
-    } else if (rawData && Array.isArray(rawData.data)) {
-      dataArray = rawData.data;
-    } else if (rawData) {
-      dataArray = [rawData];
-    }
-
-    if (!dataArray || dataArray.length === 0) {
-      resultEl.innerHTML = '<div class="empty-state">No forecast data available.</div>';
-      return;
-    }
-
-    currentView = "forecast";
-    currentDataArray = dataArray;
-    currentPage = 1;
-    renderForecastTable();
+  } catch (e) {
+    showError(e);
   }
-
-  function renderForecastTable() {
-    resultEl.innerHTML = "";
-
-    if (currentDataArray.length === 0) return;
-
-    const totalPages = Math.ceil(currentDataArray.length / pageSize);
-    if (paginationControls) {
-      if (totalPages > 1) {
-        paginationControls.style.display = "flex";
-        pageInfo.textContent = `Page ${currentPage} of ${totalPages}`;
-        btnPrev.disabled = currentPage === 1;
-        btnNext.disabled = currentPage === totalPages;
-        btnPrev.style.opacity = currentPage === 1 ? "0.5" : "1";
-        btnPrev.style.cursor = currentPage === 1 ? "default" : "pointer";
-        btnNext.style.opacity = currentPage === totalPages ? "0.5" : "1";
-        btnNext.style.cursor = currentPage === totalPages ? "default" : "pointer";
-      } else {
-        paginationControls.style.display = "none";
-      }
-    }
-
-    const table = document.createElement("table");
-    table.className = "data-table";
-
-    const thead = document.createElement("thead");
-    thead.innerHTML = `
-      <tr>
-        <th>Product Id</th>
-        <th>Product Name</th>
-        <th>Target Period</th>
-        <th>Predicted Demand</th>
-        <th>Suggested Restock Qty</th>
-        <th>Stockout Risk</th>
-        <th>Action</th>
-      </tr>
-    `;
-    table.appendChild(thead);
-
-    const tbody = document.createElement("tbody");
-
-    const startIndex = (currentPage - 1) * pageSize;
-    const endIndex = Math.min(startIndex + pageSize, currentDataArray.length);
-    const paginatedData = currentDataArray.slice(startIndex, endIndex);
-
-    paginatedData.forEach(item => {
-      const tr = document.createElement("tr");
-      
-      const productId = item.product_id || item.productId || "-";
-      const productName = item.product_name || item.productName || "-";
-      const targetPeriod = "Next 30 Days";
-      const predictedDemand = item.forecast_predicted_demand_next_30_days ?? item.predictedDemand ?? "-";
-      const suggestedRestockQty = item.forecast_suggested_restock_qty ?? item.suggestedRestockQty ?? "-";
-      const stockoutRisk = item.analytics_stockout_risk ?? item.stockoutRisk ?? "-";
-
-      tr.innerHTML = `
-        <td>${productId}</td>
-        <td>${productName}</td>
-        <td>${targetPeriod}</td>
-        <td>${predictedDemand}</td>
-        <td>${suggestedRestockQty}</td>
-        <td>${stockoutRisk}</td>
-        <td><button class="view-forecast-btn">View Details</button></td>
-      `;
-
-      tr.querySelector('.view-forecast-btn').addEventListener('click', () => {
-        showForecastPopup(item);
-      });
-
-      tbody.appendChild(tr);
-    });
-    table.appendChild(tbody);
-    resultEl.appendChild(table);
-  }
-
-  function showForecastPopup(item) {
-    const modal = document.getElementById('forecastModal');
-    const modalContent = document.getElementById('forecastDetailsContent');
-    
-    // Formatting Sales History
-    const salesHistoryHtml = Object.entries(item.salesHistory || item.sales_history || {}).map(([period, data]) => {
-      if (typeof data !== 'object' || data === null) return '';
-      const periodDataHtml = Object.entries(data).map(([key, value]) => `<li><strong>${key}:</strong> ${value}</li>`).join('');
-      return `<h4>${period.charAt(0).toUpperCase() + period.slice(1)}</h4><ul>${periodDataHtml}</ul>`;
-    }).join('') || '<p>No sales history available.</p>';
-
-    modalContent.innerHTML = `
-      <div style="margin-bottom: 16px;">
-        <strong>Product ID:</strong> ${item.product_id || item.productId || '-'}<br/>
-        <strong>Product Name:</strong> ${item.product_name || item.productName || '-'}<br/>
-        <strong>Current Stock:</strong> ${item.current_stock ?? item.currentStock ?? '-'}<br/>
-        <strong>Current Price:</strong> $${item.current_price ?? item.currentPrice ?? '-'}<br/>
-      </div>
-      <div style="margin-bottom: 16px;">
-        <strong>Forecast Recommendation:</strong> ${item.forecast_recommendation || item.recommendation || '-'}<br/>
-        <strong>Suggested Price:</strong> $${item.pricing_suggested_price ?? item.suggestedPrice ?? '-'}<br/>
-        <strong>Pricing Reason:</strong> ${item.pricing_reason ?? item.strategyReason ?? '-'}<br/>
-        <strong>Total Historical Sales:</strong> ${item.analytics_total_historical_sales ?? item.totalHistoricalSales ?? '-'}<br/>
-      </div>
-      <h3>Sales History</h3>
-      ${salesHistoryHtml}
-    `;
-
-    modal.style.display = 'block';
-  }
-
-  // Close Forecast modal functionality
-  const closeForecastModalBtn = document.getElementById('closeForecastModal');
-  if (closeForecastModalBtn) {
-    closeForecastModalBtn.addEventListener('click', () => {
-      document.getElementById('forecastModal').style.display = 'none';
-    });
-  }
-
-  window.addEventListener('click', (event) => {
-    const forecastModal = document.getElementById('forecastModal');
-    if (event.target == forecastModal) {
-      forecastModal.style.display = 'none';
-    }
-  });
-
+});
   // Sales Graph functionality
   function showSalesGraph() {
     if (paginationControls) paginationControls.style.display = "none";
@@ -738,55 +567,279 @@
   }
 
   async function loadSalesGraph() {
-    showSalesGraph();
-    
-    const timeRange = parseInt(document.getElementById('timeRange').value);
-    
-    try {
-      const orders = await get(`${apiBase}/sales/orders`);
-      
-      if (!Array.isArray(orders)) {
-        throw new Error('Invalid sales data format');
-      }
+  showSalesGraph();
 
-      const processedData = processSalesData(orders);
-      
-      const allDates = Object.keys(processedData.salesByDate).sort((a, b) => new Date(a) - new Date(b));
-      const newestDate = allDates.length > 0 ? new Date(allDates[allDates.length - 1]) : new Date();
+  const selectedRange = document.getElementById('timeRange').value;
 
-      const recentDates = [];
-      const recentData = [];
+  let timeRange = 7;
 
-      for (let i = timeRange - 1; i >= 0; i--) {
-        const targetDate = new Date(newestDate);
-        targetDate.setDate(newestDate.getDate() - i);
-        const dateKey = targetDate.toLocaleDateString();
-
-        recentDates.push(dateKey);
-        recentData.push(processedData.salesByDate[dateKey] || 0); // Force $0 if missing
-      }
-      // --------------------------
-      
-      createChart(recentDates, recentData);
-      updateStats(processedData);
-      
-    } catch (error) {
-      console.error('Error loading sales graph:', error);
-      showError(error);
-      hideSalesGraph();
-    }
+  if (selectedRange === "daily") {
+    timeRange = 7;
+  } else if (selectedRange === "weekly") {
+    timeRange = 30;
+  } else if (selectedRange === "monthly") {
+    timeRange = 90;
   }
 
+  try {
+    const orders = await get(`${apiBase}/sales/orders`);
+
+    if (!Array.isArray(orders)) {
+      throw new Error('Invalid sales data format');
+    }
+
+    const processedData = processSalesData(orders);
+
+    const allDates = Object.keys(processedData.salesByDate).sort(
+      (a, b) => new Date(a) - new Date(b)
+    );
+
+    const newestDate =
+      allDates.length > 0
+        ? new Date(allDates[allDates.length - 1])
+        : new Date();
+
+    const recentDates = [];
+    const recentData = [];
+
+    for (let i = timeRange - 1; i >= 0; i--) {
+      const targetDate = new Date(newestDate);
+      targetDate.setDate(newestDate.getDate() - i);
+
+      const dateKey = targetDate.toLocaleDateString();
+
+      recentDates.push(dateKey);
+
+      // Use 0 if no sales on that day
+      recentData.push(processedData.salesByDate[dateKey] || 0);
+    }
+
+    createChart(recentDates, recentData);
+    updateStats(processedData);
+
+  } catch (error) {
+    console.error('Error loading sales graph:', error);
+    showError(error);
+    hideSalesGraph();
+  }
+}
+
   // Event listeners for sales graph
-  document.getElementById("btnSalesGraph")?.addEventListener("click", loadSalesGraph);
-  
+document.getElementById("btnSalesGraph").addEventListener("click", async () => {
+  hideForecastHistory();
+  loadSalesGraph();
+});  
   document.getElementById("refreshGraph")?.addEventListener("click", loadSalesGraph);
   
   document.getElementById("timeRange")?.addEventListener("change", loadSalesGraph);
 
   // Logout functionality
   document.getElementById("btnLogout")?.addEventListener("click", () => {
-    localStorage.removeItem("token");
-    window.location.href = "/login.html";
+  localStorage.removeItem("token");
+  window.location.href = "/login.html";
+});
+
+async function loadDailySales() {
+  const tbody = document.getElementById("dailyTableBody");
+  if (!tbody) return;
+
+  tbody.innerHTML = "Loading...";
+
+  try {
+    const orders = await get(`${apiBase}/sales/orders`);
+
+    const grouped = {};
+
+    orders.forEach(order => {
+      const product =
+        order.items?.[0]?.product_name ||
+        order.product_name ||
+        "Unknown Product";
+
+      const day = new Date(order.createdAt).toLocaleDateString();
+
+      const amount = parseFloat(order.total_amount || 0);
+
+      const key = product + "-" + day;
+
+      if (!grouped[key]) {
+        grouped[key] = {
+          product,
+          day,
+          total: 0
+        };
+      }
+
+      grouped[key].total += amount;
+    });
+
+    const rows = Object.values(grouped)
+      .map(row => `
+        <tr>
+          <td>${row.product}</td>
+          <td>${row.day}</td>
+          <td>$${row.total.toFixed(2)}</td>
+        </tr>
+      `)
+      .join("");
+
+    tbody.innerHTML = rows || `<tr><td colspan="3">No data available</td></tr>`;
+
+  } catch (err) {
+    console.error("Daily load error:", err);
+    tbody.innerHTML = `<tr><td colspan="3">Error loading daily data</td></tr>`;
+  }
+}
+
+async function loadWeeklySales() {
+  const tbody = document.getElementById("weeklyTableBody");
+  if (!tbody) return;
+
+  tbody.innerHTML = "Loading...";
+
+  try {
+    const orders = await get(`${apiBase}/sales/orders`);
+
+    const grouped = {};
+    const periodTotals = {};
+
+    orders.forEach(order => {
+      const date = new Date(order.createdAt);
+
+      const day = date.getDay();
+      const diffToMonday = (day === 0 ? -6 : 1) - day;
+
+      const start = new Date(date);
+      start.setDate(date.getDate() + diffToMonday);
+
+      const end = new Date(start);
+      end.setDate(start.getDate() + 6);
+
+      const weekKey = `${start.toLocaleDateString()} - ${end.toLocaleDateString()}`;
+
+      const product = order.items?.[0]?.product_name || "Unknown Product";
+      const amount = parseFloat(order.total_amount || 0);
+
+      const key = weekKey + "-" + product;
+
+      // product-level grouping
+      if (!grouped[key]) {
+        grouped[key] = {
+          product,
+          period: weekKey,
+          total: 0
+        };
+      }
+
+      grouped[key].total += amount;
+
+      // period total (ALL products)
+      if (!periodTotals[weekKey]) {
+        periodTotals[weekKey] = 0;
+      }
+      periodTotals[weekKey] += amount;
+    });
+
+    tbody.innerHTML = Object.values(grouped)
+      .map(row => `
+        <tr>
+          <td>${row.product}</td>
+          <td>${row.period}</td>
+          <td>$${row.total.toFixed(2)}</td>
+          <td>$${periodTotals[row.period].toFixed(2)}</td>
+        </tr>
+      `)
+      .join("");
+
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="4">Error loading weekly data</td></tr>`;
+  }
+}
+
+async function loadMonthlySales() {
+  const tbody = document.getElementById("monthlyTableBody");
+  if (!tbody) return;
+
+  tbody.innerHTML = "Loading...";
+
+  try {
+    const orders = await get(`${apiBase}/sales/orders`);
+
+    const grouped = {};
+    const periodTotals = {};
+
+    orders.forEach(order => {
+      const date = new Date(order.createdAt);
+
+      const monthKey = date.toLocaleString('default', {
+        month: 'long',
+        year: 'numeric'
+      });
+
+      const product = order.items?.[0]?.product_name || "Unknown Product";
+      const amount = parseFloat(order.total_amount || 0);
+
+      const key = monthKey + "-" + product;
+
+      // product-level grouping
+      if (!grouped[key]) {
+        grouped[key] = {
+          product,
+          period: monthKey,
+          total: 0
+        };
+      }
+
+      grouped[key].total += amount;
+
+      // month-level total
+      if (!periodTotals[monthKey]) {
+        periodTotals[monthKey] = 0;
+      }
+      periodTotals[monthKey] += amount;
+    });
+
+    tbody.innerHTML = Object.values(grouped)
+      .map(row => `
+        <tr>
+          <td>${row.product}</td>
+          <td>${row.period}</td>
+          <td>$${row.total.toFixed(2)}</td>
+          <td>$${periodTotals[row.period].toFixed(2)}</td>
+        </tr>
+      `)
+      .join("");
+
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="4">Error loading monthly data</td></tr>`;
+  }
+}
+
+window.switchSalesTab = function(tabName) {
+
+  document.querySelectorAll(".sales-tabs .tab").forEach(button => {
+    button.classList.remove("active");
   });
+
+  document.querySelectorAll(".tab-content").forEach(content => {
+    content.classList.remove("active");
+  });
+
+  const clickedButton = document.querySelector(
+    `.sales-tabs .tab[onclick="switchSalesTab('${tabName}')"]`
+  );
+
+  if (clickedButton) {
+    clickedButton.classList.add("active");
+  }
+
+  const selectedTab = document.getElementById(`${tabName}-tab`);
+  if (selectedTab) {
+    selectedTab.classList.add("active");
+  }
+
+  if (tabName === "daily") loadDailySales();
+  if (tabName === "weekly") loadWeeklySales();
+  if (tabName === "monthly") loadMonthlySales();
+};
 })();
