@@ -494,7 +494,8 @@ footer {
   cursor: pointer;
 }
 
-.view-order-btn {
+.view-order-btn,
+.view-forecast-btn {
   background-color: var(--primary-color, #2563eb);
   color: white;
   border: none;
@@ -504,6 +505,26 @@ footer {
   font-size: 0.875rem;
 }
 
-.view-order-btn:hover {
+.view-order-btn:hover,
+.view-forecast-btn:hover {
   opacity: 0.9;
+}
+
+#forecastDetailsContent h3 {
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+  color: var(--text-main, #1f2937);
+}
+
+#forecastDetailsContent h4 {
+  margin-top: 0.75rem;
+  margin-bottom: 0.25rem;
+  color: var(--text-muted, #4b5563);
+}
+
+#forecastDetailsContent ul {
+  margin: 0;
+  padding-left: 1.5rem;
+  list-style-type: disc;
+  color: var(--text-muted, #4b5563);
 }
