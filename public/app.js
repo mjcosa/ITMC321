@@ -406,4 +406,10 @@
   document.getElementById("refreshGraph")?.addEventListener("click", loadSalesGraph);
   
   document.getElementById("timeRange")?.addEventListener("change", loadSalesGraph);
+
+  // Logout functionality
+  document.getElementById("btnLogout")?.addEventListener("click", () => {
+    localStorage.removeItem("token");
+    window.location.href = "/login.html";
+  });
 })();
