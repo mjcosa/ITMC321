@@ -222,9 +222,124 @@
     showLoading("Loading orders...");
     try {
       const data = await get(`${apiBase}/sales/orders`);
-      show(data);
+      showOrders(data);
     } catch (e) {
       showError(e);
+    }
+  });
+
+  function showOrders(orders) {
+    hideSalesGraph();
+    if (salesChart) {
+      salesChart.destroy();
+      salesChart = null;
+    }
+    
+    resultEl.innerHTML = "";
+    if (paginationControls) paginationControls.style.display = "none";
+
+    let dataArray = Array.isArray(orders) ? orders : [orders];
+    if (!Array.isArray(orders) && typeof orders === "object" && orders !== null) {
+      if (Array.isArray(orders.data)) {
+        dataArray = orders.data;
+      }
+    }
+
+    if (!dataArray || dataArray.length === 0) {
+      resultEl.innerHTML = '<div class="empty-state">No orders available.</div>';
+      return;
+    }
+
+    const table = document.createElement("table");
+    table.className = "data-table";
+
+    const thead = document.createElement("thead");
+    thead.innerHTML = `
+      <tr>
+        <th>Customer Name</th>
+        <th>Email</th>
+        <th>Contact Number</th>
+        <th>Total Amount</th>
+        <th>Status</th>
+        <th>Action</th>
+      </tr>
+    `;
+    table.appendChild(thead);
+
+    const tbody = document.createElement("tbody");
+    dataArray.forEach(order => {
+      const tr = document.createElement("tr");
+      const customerName = order.customer_info?.name || "-";
+      const email = order.customer_info?.email || "-";
+      const contact = order.customer_info?.contact_number || "-";
+      const totalAmount = order.total_amount !== undefined ? '$' + order.total_amount : "-";
+      const status = order.order_status || order.payment_status || "-";
+
+      tr.innerHTML = `
+        <td>${customerName}</td>
+        <td>${email}</td>
+        <td>${contact}</td>
+        <td>${totalAmount}</td>
+        <td>${status}</td>
+        <td><button class="view-order-btn">View Order</button></td>
+      `;
+
+      tr.querySelector('.view-order-btn').addEventListener('click', () => {
+        showOrderPopup(order);
+      });
+
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    resultEl.appendChild(table);
+  }
+
+  function showOrderPopup(order) {
+    const modal = document.getElementById('orderModal');
+    const modalContent = document.getElementById('orderDetailsContent');
+    
+    let itemsHtml = '<p>No items found.</p>';
+    if (order.items && order.items.length > 0) {
+      itemsHtml = '<table class="data-table"><thead><tr><th>Product</th><th>Quantity</th><th>Price</th><th>Subtotal</th></tr></thead><tbody>';
+      order.items.forEach(item => {
+        itemsHtml += `
+          <tr>
+            <td>${item.product_name || item.product_id || '-'}</td>
+            <td>${item.quantity || 1}</td>
+            <td>$${item.price || 0}</td>
+            <td>$${item.subtotal || 0}</td>
+          </tr>
+        `;
+      });
+      itemsHtml += '</tbody></table>';
+    }
+
+    modalContent.innerHTML = `
+      <div style="margin-bottom: 16px;">
+        <strong>Order ID:</strong> ${order.order_id || '-'}<br/>
+        <strong>Date:</strong> ${order.createdAt ? new Date(order.createdAt).toLocaleString() : '-'}<br/>
+        <strong>Shipping Fee:</strong> $${order.shipping_fee || 0}<br/>
+        <strong>Delivery Address:</strong> ${order.customer_info?.delivery_address || '-'}<br/>
+      </div>
+      <h3>Items</h3>
+      ${itemsHtml}
+    `;
+
+    modal.style.display = 'block';
+  }
+
+  // Close modal functionality
+  const closeModalBtn = document.getElementById('closeOrderModal');
+  if (closeModalBtn) {
+    closeModalBtn.addEventListener('click', () => {
+      document.getElementById('orderModal').style.display = 'none';
+    });
+  }
+
+  window.addEventListener('click', (event) => {
+    const modal = document.getElementById('orderModal');
+    if (event.target == modal) {
+      modal.style.display = 'none';
     }
   });
 
