@@ -151,7 +151,7 @@ const calculateForecasts = async (uploadedData = null) => {
         historical_sales: salesRecord.dailyData[date]
       }));
 
-    // PUSH TO API RESPONSE ARRAY
+    // PUSH TO API RESPONSE ARRAY (FLATTENED)
     forecastResults.push({
       product_id: product.productId,
       product_name: product.productName,
