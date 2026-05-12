@@ -8,6 +8,7 @@
   let currentHeaders = [];
   let currentPage = 1;
   const pageSize = 10;
+  let currentView = "default";
 
   function hideForecastHistory() {
   const el = document.getElementById("forecastSalesHistory");
@@ -23,19 +24,24 @@
     btnPrev.addEventListener("click", () => {
       if (currentPage > 1) {
         currentPage--;
-        renderTable();
+        if (currentView === "orders") renderOrdersTable();
+        else if (currentView === "forecast") renderForecastTable();
+        else renderTable();
       }
     });
     btnNext.addEventListener("click", () => {
       const totalPages = Math.ceil(currentDataArray.length / pageSize);
       if (currentPage < totalPages) {
         currentPage++;
-        renderTable();
+        if (currentView === "orders") renderOrdersTable();
+        else if (currentView === "forecast") renderForecastTable();
+        else renderTable();
       }
     });
   }
 
   function show(obj) {
+    currentView = "default";
     // Hide sales graph when showing other data
     hideSalesGraph();
     if (salesChart) {
@@ -113,7 +119,18 @@
         Object.keys(item).forEach((key) => allKeys.add(key));
       }
     });
-    currentHeaders = Array.from(allKeys);
+    currentHeaders = Array.from(allKeys).filter(key => {
+      const k = key.toLowerCase();
+      return !k.includes('daily') && 
+             !k.includes('weekly') && 
+             !k.includes('monthly') && 
+             !k.includes('sales_history') && 
+             !k.includes('saleshistory') &&
+             k !== '_id' && 
+             k !== 'id' && 
+             k !== '__v' && 
+             k !== 'v';
+    });
 
     // Handle non-object arrays
     if (currentHeaders.length === 0) {
@@ -274,6 +291,33 @@ document.getElementById("btnOrders").addEventListener("click", async () => {
       return;
     }
 
+    currentView = "orders";
+    currentDataArray = dataArray;
+    currentPage = 1;
+    renderOrdersTable();
+  }
+
+  function renderOrdersTable() {
+    resultEl.innerHTML = "";
+
+    if (currentDataArray.length === 0) return;
+
+    const totalPages = Math.ceil(currentDataArray.length / pageSize);
+    if (paginationControls) {
+      if (totalPages > 1) {
+        paginationControls.style.display = "flex";
+        pageInfo.textContent = `Page ${currentPage} of ${totalPages}`;
+        btnPrev.disabled = currentPage === 1;
+        btnNext.disabled = currentPage === totalPages;
+        btnPrev.style.opacity = currentPage === 1 ? "0.5" : "1";
+        btnPrev.style.cursor = currentPage === 1 ? "default" : "pointer";
+        btnNext.style.opacity = currentPage === totalPages ? "0.5" : "1";
+        btnNext.style.cursor = currentPage === totalPages ? "default" : "pointer";
+      } else {
+        paginationControls.style.display = "none";
+      }
+    }
+
     const table = document.createElement("table");
     table.className = "data-table";
 
@@ -291,7 +335,12 @@ document.getElementById("btnOrders").addEventListener("click", async () => {
     table.appendChild(thead);
 
     const tbody = document.createElement("tbody");
-    dataArray.forEach(order => {
+
+    const startIndex = (currentPage - 1) * pageSize;
+    const endIndex = Math.min(startIndex + pageSize, currentDataArray.length);
+    const paginatedData = currentDataArray.slice(startIndex, endIndex);
+
+    paginatedData.forEach(order => {
       const tr = document.createElement("tr");
       const customerName = order.customer_info?.name || "-";
       const email = order.customer_info?.email || "-";
