@@ -34,7 +34,33 @@ const uploadForecastData = async (req, res) => {
   }
 };
 
+const fetchStoredForecasts = async (req, res) => {
+  try {
+    const { productId } = req.query;
+    
+    let filters = {};
+    if (productId) filters.productId = productId;
+
+    const forecasts = await forecastingService.getStoredForecasts(filters);
+
+    return res.status(200).json({
+      success: true,
+      count: forecasts.length,
+      data: forecasts
+    });
+
+  } catch (error) {
+    console.error('Error fetching stored forecasts:', error.message);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to fetch forecasts from database.',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   getForecastReport,
-  uploadForecastData
+  uploadForecastData,
+  fetchStoredForecasts,
 };

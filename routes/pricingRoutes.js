@@ -1,7 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const pricingController = require('../controllers/pricingController');
+const { protect, authorize } = require('../middleware/authMiddleware');
 
-router.get('/recommendations', pricingController.fetchPricingRecommendations);
+const { verifyApiKey } = require('../middleware/apiAuthMiddleware');
+
+router.get('/recommendations', verifyApiKey, pricingController.fetchPricingRecommendations);
 
 module.exports = router;

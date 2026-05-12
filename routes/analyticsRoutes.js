@@ -14,4 +14,6 @@ router.post('/upload-report', upload.fields([
     { name: 'sales_file', maxCount: 1 }
 ]), forecastingController.uploadForecastData);
 
+router.get('/', forecastingController.fetchStoredForecasts);
+
 module.exports = router;
