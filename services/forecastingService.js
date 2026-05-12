@@ -3,6 +3,14 @@ const { getAllInventory } = require('./inventoryService');
 const Forecast = require('../models/forecast');
 const PricingStrategy = require('../models/pricing');
 
+const getWeekKey = (dateStr) => {
+  const d = new Date(dateStr);
+  const day = d.getUTCDay();
+  const diff = day === 0 ? -6 : 1 - day; 
+  d.setUTCDate(d.getUTCDate() + diff);
+  return d.toISOString().split('T')[0];
+};
+
 // EXTRACT
 const fetchSubsystemData = async (uploadedData) => {
   const rawInventory = uploadedData?.inventory || await getAllInventory();
@@ -31,28 +39,57 @@ const cleanAndTransformData = (rawInventory, rawSales) => {
   
   const inventory = Object.values(inventoryMap);
 
-  const sales = rawSales.map(sale => {
-    let rawDate = sale.date || sale.created_at || sale.timestamp || new Date();
+  const sales = [];
+
+  rawSales.forEach(order => {
+    // Skip failed/cancelled orders
+    const status = (order.payment_status || order.order_status || '').toString().toLowerCase();
+    if (status !== 'confirmed' && status !== 'completed') {
+      return; 
+    }
+
+    // Parse the Date
+    let rawDate = order.payment_date || order.createdAt || order.orderDate || new Date();
     let parsedDate = new Date(rawDate);
     if (isNaN(parsedDate)) parsedDate = new Date();
+    const dateString = parsedDate.toISOString().split('T')[0];
 
-    return {
-      productId: sale.product_id || sale.productId || sale.item_id || sale.sku || 'UNKNOWN',
-      quantity: Number(sale.quantity || sale.qty || sale.amount || 0) || 0,
-      date: parsedDate.toISOString().split('T')[0]
-    };
-  }).filter(sale => sale.productId !== 'UNKNOWN' && sale.quantity > 0);
+    // Extract the actual products bought inside this order
+    if (order.items && Array.isArray(order.items)) {
+      order.items.forEach(item => {
+        sales.push({
+          productId: item.product_id || item.productId || item.sku || 'UNKNOWN',
+          quantity: Number(item.quantity || item.qty || 1), 
+          date: dateString
+        });
+      });
+    }
+  });
+
+  const validSales = sales.filter(sale => sale.productId !== 'UNKNOWN' && sale.quantity > 0);
 
   const salesByProductAndDate = {};
   
-  sales.forEach(({ productId, quantity, date }) => {
+  validSales.forEach(({ productId, quantity, date }) => {
     if (!salesByProductAndDate[productId]) {
-      salesByProductAndDate[productId] = { totalSales: 0, dailyData: {} };
+      salesByProductAndDate[productId] = { 
+        totalSales: 0, 
+        dailyData: {},
+        weeklyData: {},
+        monthlyData: {}
+      };
     }
-    if (!salesByProductAndDate[productId].dailyData[date]) {
-      salesByProductAndDate[productId].dailyData[date] = 0;
-    }
+
+    const monthKey = date.substring(0, 7); 
+    const weekKey = getWeekKey(date);      
+
+    if (!salesByProductAndDate[productId].dailyData[date]) salesByProductAndDate[productId].dailyData[date] = 0;
+    if (!salesByProductAndDate[productId].weeklyData[weekKey]) salesByProductAndDate[productId].weeklyData[weekKey] = 0;
+    if (!salesByProductAndDate[productId].monthlyData[monthKey]) salesByProductAndDate[productId].monthlyData[monthKey] = 0;
+
     salesByProductAndDate[productId].dailyData[date] += quantity;
+    salesByProductAndDate[productId].weeklyData[weekKey] += quantity;
+    salesByProductAndDate[productId].monthlyData[monthKey] += quantity;
     salesByProductAndDate[productId].totalSales += quantity;
   });
 
@@ -67,12 +104,13 @@ const calculateForecasts = async (uploadedData = null) => {
   const safetyStock = 20;
   const forecastResults = [];
   
-  // Arrays for MongoDB batch inserts
   const forecastsToSave = []; 
   const pricingToSave = []; 
 
   inventory.forEach(product => {
-    const salesRecord = salesByProductAndDate[product.productId] || { totalSales: 0, dailyData: {} };
+    const salesRecord = salesByProductAndDate[product.productId] || { 
+      totalSales: 0, dailyData: {}, weeklyData: {}, monthlyData: {} 
+    };
     const totalSales = salesRecord.totalSales;
     
     // FORECAST MATH
@@ -90,19 +128,16 @@ const calculateForecasts = async (uploadedData = null) => {
     const stockoutRisk = restockAmount > 50 ? 'High' : (restockAmount > 0 ? 'Medium' : 'Low');
 
     // PRICING ENGINE MATH
-    // Fallback to $10.00 if your inventory data doesn't have a price field yet
     const currentPrice = Number(product.price || product.currentPrice || 10.00); 
     let suggestedPrice = currentPrice;
     let strategyReason = 'Demand matches supply; hold current price.';
-    let elasticityScore = 1.0; // Baseline
+    let elasticityScore = 1.0; 
 
-    // Rule A: Scarcity / High Demand
     if (stockoutRisk === 'High' || predictedDemand > (product.currentStock * 1.5)) {
       suggestedPrice = Number((currentPrice * 1.05).toFixed(2)); 
       strategyReason = 'High demand and low stock. Raised price by 5% to maximize margin.';
       elasticityScore = 0.8; 
     } 
-    // Rule B: Overstock / Clearance
     else if (product.currentStock > (predictedDemand * 3)) {
       suggestedPrice = Number((currentPrice * 0.90).toFixed(2)); 
       strategyReason = 'Excess inventory detected. Lowered price by 10% to stimulate sales.';
@@ -122,6 +157,12 @@ const calculateForecasts = async (uploadedData = null) => {
       product_name: product.productName,
       current_stock: product.currentStock,
       current_price: currentPrice,
+
+      sales_history: {
+        daily: salesRecord.dailyData,
+        weekly: salesRecord.weeklyData,
+        monthly: salesRecord.monthlyData
+      },
       forecast_predicted_demand_next_30_days: predictedDemand,
       forecast_recommendation: recommendation,
       forecast_suggested_restock_qty: restockAmount,
@@ -139,10 +180,16 @@ const calculateForecasts = async (uploadedData = null) => {
       suggestedRestockQty: restockAmount,
       stockoutRisk: stockoutRisk,
       modelUsed: 'Moving Average / Linear Baseline',
+
+      salesHistory: {
+        daily: salesRecord.dailyData,
+        weekly: salesRecord.weeklyData,
+        monthly: salesRecord.monthlyData
+      },
+
       graphData: graphData
     });
 
-    // Only save a pricing strategy if a change is actually recommended
     if (suggestedPrice !== currentPrice) {
       pricingToSave.push({
         productId: product.productId,
@@ -167,16 +214,22 @@ const calculateForecasts = async (uploadedData = null) => {
     console.error('Error batch saving to database:', dbError);
   }
 
-  // Sort the results by product_id to ensure sequential row ordering (e.g., P001, P002, etc.)
   forecastResults.sort((a, b) => {
     const idA = String(a.product_id || '');
     const idB = String(b.product_id || '');
     return idA.localeCompare(idB, undefined, { numeric: true, sensitivity: 'base' });
   });
-
+  
   return forecastResults;
+};
+
+const getStoredForecasts = async (filters = {}) => {
+  // Fetch from the database, sort by newest first
+  const forecasts = await Forecast.find(filters).sort({ createdAt: -1 });
+  return forecasts;
 };
 
 module.exports = {
   calculateForecasts,
+  getStoredForecasts,
 };
