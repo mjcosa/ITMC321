@@ -1,5 +1,6 @@
-const express = require('express');
-const dotenv = require('dotenv');
+const dotenv = require('dotenv')
+dotenv.config();
+const express = require('express');;
 const connectDB = require('./config/db');
 const cors = require('cors');
 const path = require('path');
@@ -8,7 +9,7 @@ const analyticsRoutes = require('./routes/analyticsRoutes');
 const salesRoutes = require('./routes/salesRoutes'); 
 const pricingRoutes = require('./routes/pricingRoutes');
 const cronRoutes = require('./routes/cronRoutes');
-dotenv.config();
+const authRoutes = require('./routes/authRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -19,6 +20,7 @@ app.use(express.json());
 
 app.use(express.static(path.join(__dirname, 'public')));
 
+app.use('/api/auth/', authRoutes);
 app.use('/api/forecast/', analyticsRoutes);
 app.use('/api/inventory/', inventoryRoutes);
 app.use('/api/sales/', salesRoutes);

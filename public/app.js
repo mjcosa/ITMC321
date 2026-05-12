@@ -213,8 +213,25 @@
   }
 
   async function get(path) {
-    const res = await fetch(path);
-    if (!res.ok) throw new Error(res.status + " " + res.statusText);
+    const token = localStorage.getItem("token"); 
+    
+    const headers = {
+      'Content-Type': 'application/json'
+    };
+    
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const res = await fetch(path, { headers }); 
+    
+    if (!res.ok) {
+      if (res.status === 401) {
+        localStorage.removeItem("token");
+        window.location.href = "/index.html"; 
+      }
+      throw new Error(res.status + " " + res.statusText);
+    }
     return res.json();
   }
 
@@ -368,7 +385,7 @@
   document.getElementById("btnForecast").addEventListener("click", async () => {
     showLoading("Loading forecast...");
     try {
-      const data = await get(`${apiBase}/forecast/generate-report`);
+      const data = await get(`${apiBase}/forecast/`); 
       show(data);
     } catch (e) {
       showError(e);
@@ -497,13 +514,21 @@
 
       const processedData = processSalesData(orders);
       
-      // Sort dates and get recent data based on time range
-      const sortedDates = Object.keys(processedData.salesByDate).sort((a, b) => 
-        new Date(a) - new Date(b)
-      );
-      
-      const recentDates = sortedDates.slice(-timeRange);
-      const recentData = recentDates.map(date => processedData.salesByDate[date]);
+      const allDates = Object.keys(processedData.salesByDate).sort((a, b) => new Date(a) - new Date(b));
+      const newestDate = allDates.length > 0 ? new Date(allDates[allDates.length - 1]) : new Date();
+
+      const recentDates = [];
+      const recentData = [];
+
+      for (let i = timeRange - 1; i >= 0; i--) {
+        const targetDate = new Date(newestDate);
+        targetDate.setDate(newestDate.getDate() - i);
+        const dateKey = targetDate.toLocaleDateString();
+
+        recentDates.push(dateKey);
+        recentData.push(processedData.salesByDate[dateKey] || 0); // Force $0 if missing
+      }
+      // --------------------------
       
       createChart(recentDates, recentData);
       updateStats(processedData);

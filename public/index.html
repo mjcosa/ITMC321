@@ -1,172 +1,58 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Admin Analytics Dashboard</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/styles.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login / Signup</title>
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    <link rel="stylesheet" href="login.css" />
 </head>
 
 <body>
-    <div class="dashboard-container">
-        <header class="topbar">
-            <div class="logo">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                    stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M3 3v18h18" />
-                    <path d="M18 17V9" />
-                    <path d="M13 17V5" />
-                    <path d="M8 17v-3" />
-                </svg>
-                <h1>Admin Analytics</h1>
-            </div>
-            <div class="user-profile">
-                <div class="avatar">A</div>
-                <span>Administrator</span>
-                <button id="btnLogout" class="logout-btn" title="Logout">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                        <polyline points="16 17 21 12 16 7"></polyline>
-                        <line x1="21" y1="12" x2="9" y2="12"></line>
-                    </svg>
-                    Logout
-                </button>
-            </div>
-        </header>
-
-        <main class="dashboard-content">
-            <div class="header-section">
-                <h2>Dashboard Overview</h2>
-                <p>View your sales, inventory, and forecasting data in real-time.</p>
-            </div>
-
-            <div class="action-cards">
-                <button id="btnOrders" class="card">
-                    <div class="card-icon blue">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
-                            <line x1="3" y1="6" x2="21" y2="6" />
-                            <path d="M16 10a4 4 0 0 1-8 0" />
-                        </svg>
-                    </div>
-                    <div class="card-content">
-                        <h3>Sales Orders</h3>
-                        <p>Fetch latest order data</p>
-                    </div>
-                </button>
-
-                <button id="btnSalesGraph" class="card">
-                    <div class="card-icon teal">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M3 3v18h18" />
-                            <path d="M18 17V9" />
-                            <path d="M13 17V5" />
-                            <path d="M8 17v-3" />
-                        </svg>
-                    </div>
-                    <div class="card-content">
-                        <h3>Sales Graph</h3>
-                        <p>Visualize sales trends</p>
-                    </div>
-                </button>
-
-                <button id="btnPayments" class="card">
-                    <div class="card-icon green">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <rect x="2" y="5" width="20" height="14" rx="2" />
-                            <line x1="2" y1="10" x2="22" y2="10" />
-                        </svg>
-                    </div>
-                    <div class="card-content">
-                        <h3>Payments</h3>
-                        <p>View recent transactions</p>
-                    </div>
-                </button>
-
-                <button id="btnInventory" class="card">
-                    <div class="card-icon orange">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path
-                                d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
-                            <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
-                            <line x1="12" y1="22.08" x2="12" y2="12" />
-                        </svg>
-                    </div>
-                    <div class="card-content">
-                        <h3>Inventory</h3>
-                        <p>Check current stock levels</p>
-                    </div>
-                </button>
-
-                <button id="btnForecast" class="card">
-                    <div class="card-icon purple">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M3 3v18h18" />
-                            <path d="m19 9-5 5-4-4-3 3" />
-                        </svg>
-                    </div>
-                    <div class="card-content">
-                        <h3>Forecast</h3>
-                        <p>Predict future demand</p>
-                    </div>
-                </button>
-            </div>
-
-            <section class="output-section">
-                <div class="output-header">
-                    <div style="display: flex; align-items: center; gap: 16px;">
-                        <h3>Data Explorer</h3>
-                        <div id="pagination-controls" style="display: none; align-items: center; gap: 8px;">
-                            <button id="btnPrev" style="padding: 2px 8px; cursor: pointer; background: #fff; border: 1px solid var(--border-color); border-radius: 4px; color: var(--text-main);">Prev</button>
-                            <span id="pageInfo" style="font-size: 0.875rem; color: var(--text-muted);">Page 1 of 1</span>
-                            <button id="btnNext" style="padding: 2px 8px; cursor: pointer; background: #fff; border: 1px solid var(--border-color); border-radius: 4px; color: var(--text-main);">Next</button>
-                        </div>
-                    </div>
-                    <span class="status-indicator">Ready</span>
+    <div id="notification" class="notification"></div>
+    <div class="container">
+        
+        <div class="form-box login">
+            <form id="login-form">
+                <h1>Login</h1>
+                <div class="input-box">
+                    <div class="indicator">Email Address:</div>
+                    <input type="email" id="login-email" placeholder="Email" required />
                 </div>
-                <div class="output-body">
-                    <div id="result">
-                        <div class="empty-state">Select an option above to load data...</div>
-                    </div>
-                    <div id="salesGraphContainer" style="display: none;">
-                        <div class="graph-controls">
-                            <div class="control-group">
-                                <label for="timeRange">Time Range:</label>
-                                <select id="timeRange">
-                                    <option value="7">Last 7 days</option>
-                                    <option value="30">Last 30 days</option>
-                                    <option value="90">Last 90 days</option>
-                                </select>
-                            </div>
-                            <button id="refreshGraph" class="refresh-btn">Refresh</button>
-                        </div>
-                        <div class="chart-container">
-                            <canvas id="salesChart"></canvas>
-                        </div>
-                        <div class="graph-stats">
-                            <div class="stat-item">
-                                <span class="stat-label">Total Sales:</span>
-                                <span id="totalSales" class="stat-value">$0</span>
-                            </div>
-                            <div class="stat-item">
-                                <span class="stat-label">Average Order:</span>
-                                <span id="avgOrder" class="stat-value">$0</span>
-                            </div>
-                            <div class="stat-item">
-                                <span class="stat-label">Total Orders:</span>
-                                <span id="totalOrders" class="stat-value">0</span>
-                            </div>
-                        </div>
-                    </div>
+                <div class="input-box">
+                    <div class="indicator">Password:</div>
+                    <input type="password" id="login-password" placeholder="Password" required />
                 </div>
-            </section>
-        </main>
+                <div class="forgot-link">
+                    <a href="#">Forgot Password?</a>
+                </div>
+                <button type="submit" class="btn">Login</button>
+            </form>
+        </div>
 
+        <div class="form-box register">
+            <form id="register-form">
+                <h1>Registration</h1>
+                <div class="input-box">
+                    <div class="indicator">Username:</div>
+                    <input type="text" id="register-name" placeholder="Username" required />
+                </div>
+                <div class="input-box">
+                    <div class="indicator">Email Address:</div>
+                    <input type="email" id="register-email" placeholder="Email" required />
+                </div>
+                <div class="input-box">
+                    <div class="indicator">Password:</div>
+                    <input type="password" id="register-password" placeholder="Password" required />
+                </div>
+                <div class="input-box">
+                    <div class="indicator">Confirm Password:</div>
+                    <input type="password" id="register-confirm-password" placeholder="Confirm Password" required />
+                </div>
+                <button type="submit" class="btn">Register</button>
+            </form>
+        </div>
 
         <!-- Order Details Modal -->
         <div id="orderModal" class="modal" style="display: none;">
@@ -177,8 +63,21 @@
             </div>
         </div>
 
+        <div class="toggle-box">
+            <div class="toggle-panel toggle-left">
+                <h1>Hello, Welcome!</h1>
+                <p>Don't have an account?</p>
+                <button class="btn register-btn">Register</button>
+            </div>
+            <div class="toggle-panel toggle-right">
+                <h1>Welcome Back!</h1>
+                <p>Already have an account?</p>
+                <button class="btn login-btn">Login</button>
+            </div>
+        </div>
     </div>
-    <script src="/app.js"></script>
+
+    <script src="login.js"></script>
 </body>
 
 </html>
