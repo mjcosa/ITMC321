@@ -8,6 +8,7 @@
   let currentHeaders = [];
   let currentPage = 1;
   const pageSize = 10;
+  let currentView = "default";
 
   const paginationControls = document.getElementById("pagination-controls");
   const btnPrev = document.getElementById("btnPrev");
@@ -18,19 +19,22 @@
     btnPrev.addEventListener("click", () => {
       if (currentPage > 1) {
         currentPage--;
-        renderTable();
+        if (currentView === "orders") renderOrdersTable();
+        else renderTable();
       }
     });
     btnNext.addEventListener("click", () => {
       const totalPages = Math.ceil(currentDataArray.length / pageSize);
       if (currentPage < totalPages) {
         currentPage++;
-        renderTable();
+        if (currentView === "orders") renderOrdersTable();
+        else renderTable();
       }
     });
   }
 
   function show(obj) {
+    currentView = "default";
     // Hide sales graph when showing other data
     hideSalesGraph();
     if (salesChart) {
@@ -108,7 +112,18 @@
         Object.keys(item).forEach((key) => allKeys.add(key));
       }
     });
-    currentHeaders = Array.from(allKeys);
+    currentHeaders = Array.from(allKeys).filter(key => {
+      const k = key.toLowerCase();
+      return !k.includes('daily') && 
+             !k.includes('weekly') && 
+             !k.includes('monthly') && 
+             !k.includes('sales_history') && 
+             !k.includes('saleshistory') &&
+             k !== '_id' && 
+             k !== 'id' && 
+             k !== '__v' && 
+             k !== 'v';
+    });
 
     // Handle non-object arrays
     if (currentHeaders.length === 0) {
@@ -267,6 +282,33 @@
       return;
     }
 
+    currentView = "orders";
+    currentDataArray = dataArray;
+    currentPage = 1;
+    renderOrdersTable();
+  }
+
+  function renderOrdersTable() {
+    resultEl.innerHTML = "";
+
+    if (currentDataArray.length === 0) return;
+
+    const totalPages = Math.ceil(currentDataArray.length / pageSize);
+    if (paginationControls) {
+      if (totalPages > 1) {
+        paginationControls.style.display = "flex";
+        pageInfo.textContent = `Page ${currentPage} of ${totalPages}`;
+        btnPrev.disabled = currentPage === 1;
+        btnNext.disabled = currentPage === totalPages;
+        btnPrev.style.opacity = currentPage === 1 ? "0.5" : "1";
+        btnPrev.style.cursor = currentPage === 1 ? "default" : "pointer";
+        btnNext.style.opacity = currentPage === totalPages ? "0.5" : "1";
+        btnNext.style.cursor = currentPage === totalPages ? "default" : "pointer";
+      } else {
+        paginationControls.style.display = "none";
+      }
+    }
+
     const table = document.createElement("table");
     table.className = "data-table";
 
@@ -284,7 +326,12 @@
     table.appendChild(thead);
 
     const tbody = document.createElement("tbody");
-    dataArray.forEach(order => {
+
+    const startIndex = (currentPage - 1) * pageSize;
+    const endIndex = Math.min(startIndex + pageSize, currentDataArray.length);
+    const paginatedData = currentDataArray.slice(startIndex, endIndex);
+
+    paginatedData.forEach(order => {
       const tr = document.createElement("tr");
       const customerName = order.customer_info?.name || "-";
       const email = order.customer_info?.email || "-";
@@ -363,8 +410,28 @@
   document.getElementById("btnPayments").addEventListener("click", async () => {
     showLoading("Loading payments...");
     try {
-      const data = await get(`${apiBase}/sales/payments`);
-      show(data);
+      const rawData = await get(`${apiBase}/sales/payments`);
+      
+      let dataArray = [];
+      if (Array.isArray(rawData)) {
+        dataArray = rawData;
+      } else if (rawData && Array.isArray(rawData.data)) {
+        dataArray = rawData.data;
+      } else if (rawData) {
+        dataArray = [rawData];
+      }
+      
+      const mappedData = dataArray.map(item => ({
+        payment_id: item.payment_id || item.paymentId || item._id || "-",
+        order_id: item.order_id || item.orderId || "-",
+        payment_method: item.payment_method || item.paymentMethod || "-",
+        payment_amount: item.payment_amount ?? item.paymentAmount ?? "-",
+        payment_status: item.payment_status || item.paymentStatus || "-",
+        transaction_reference: item.transaction_reference || item.transactionReference || item.transaction_id || "-",
+        payment_date: item.payment_date || item.paymentDate || item.createdAt || "-"
+      }));
+
+      show(mappedData);
     } catch (e) {
       showError(e);
     }
@@ -375,8 +442,26 @@
     .addEventListener("click", async () => {
       showLoading("Loading inventory...");
       try {
-        const data = await get(`${apiBase}/inventory/`);
-        show(data);
+        const rawData = await get(`${apiBase}/inventory/`);
+        
+        let dataArray = [];
+        if (Array.isArray(rawData)) {
+          dataArray = rawData;
+        } else if (rawData && Array.isArray(rawData.data)) {
+          dataArray = rawData.data;
+        } else if (rawData) {
+          dataArray = [rawData];
+        }
+
+        const mappedData = dataArray.map(item => {
+          const newItem = { ...item };
+          newItem.product_name = item.product_name || item.productName || item.name || "Unnamed Product";
+          delete newItem.name;
+          delete newItem.productName;
+          return newItem;
+        });
+
+        show(mappedData);
       } catch (e) {
         showError(e);
       }
@@ -385,8 +470,27 @@
   document.getElementById("btnForecast").addEventListener("click", async () => {
     showLoading("Loading forecast...");
     try {
-      const data = await get(`${apiBase}/forecast/`); 
-      show(data);
+      const rawData = await get(`${apiBase}/forecast/`);
+      
+      let dataArray = [];
+      if (Array.isArray(rawData)) {
+        dataArray = rawData;
+      } else if (rawData && Array.isArray(rawData.data)) {
+        dataArray = rawData.data;
+      } else if (rawData) {
+        dataArray = [rawData];
+      }
+      
+      const mappedData = dataArray.map(item => ({
+        product_id: item.product_id || item.productId || "-",
+        product_name: item.product_name || item.productName || "-",
+        target_period: "Next 30 Days",
+        predicted_demand: item.forecast_predicted_demand_next_30_days ?? item.predictedDemand ?? "-",
+        suggested_restock_qty: item.forecast_suggested_restock_qty ?? item.suggestedRestockQty ?? "-",
+        stockout_risk: item.analytics_stockout_risk ?? item.stockoutRisk ?? "-"
+      }));
+
+      show(mappedData);
     } catch (e) {
       showError(e);
     }
