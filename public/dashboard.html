@@ -47,13 +47,7 @@
 
             <div class="action-cards">
                 <button id="btnOrders" class="card">
-                    <div class="card-icon blue">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
-                            <line x1="3" y1="6" x2="21" y2="6" />
-                            <path d="M16 10a4 4 0 0 1-8 0" />
-                        </svg>
-                    </div>
+                    <div class="card-icon blue"></div>
                     <div class="card-content">
                         <h3>Sales Orders</h3>
                         <p>Fetch latest order data</p>
@@ -61,14 +55,7 @@
                 </button>
 
                 <button id="btnSalesGraph" class="card">
-                    <div class="card-icon teal">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M3 3v18h18" />
-                            <path d="M18 17V9" />
-                            <path d="M13 17V5" />
-                            <path d="M8 17v-3" />
-                        </svg>
-                    </div>
+                    <div class="card-icon teal"></div>
                     <div class="card-content">
                         <h3>Sales Graph</h3>
                         <p>Visualize sales trends</p>
@@ -76,12 +63,7 @@
                 </button>
 
                 <button id="btnPayments" class="card">
-                    <div class="card-icon green">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <rect x="2" y="5" width="20" height="14" rx="2" />
-                            <line x1="2" y1="10" x2="22" y2="10" />
-                        </svg>
-                    </div>
+                    <div class="card-icon green"></div>
                     <div class="card-content">
                         <h3>Payments</h3>
                         <p>View recent transactions</p>
@@ -89,14 +71,7 @@
                 </button>
 
                 <button id="btnInventory" class="card">
-                    <div class="card-icon orange">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path
-                                d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
-                            <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
-                            <line x1="12" y1="22.08" x2="12" y2="12" />
-                        </svg>
-                    </div>
+                    <div class="card-icon orange"></div>
                     <div class="card-content">
                         <h3>Inventory</h3>
                         <p>Check current stock levels</p>
@@ -104,12 +79,7 @@
                 </button>
 
                 <button id="btnForecast" class="card">
-                    <div class="card-icon purple">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M3 3v18h18" />
-                            <path d="m19 9-5 5-4-4-3 3" />
-                        </svg>
-                    </div>
+                    <div class="card-icon purple"></div>
                     <div class="card-content">
                         <h3>Forecast</h3>
                         <p>Predict future demand</p>
@@ -122,32 +92,34 @@
                     <div style="display: flex; align-items: center; gap: 16px;">
                         <h3>Data Explorer</h3>
                         <div id="pagination-controls" style="display: none; align-items: center; gap: 8px;">
-                            <button id="btnPrev" style="padding: 2px 8px; cursor: pointer; background: #fff; border: 1px solid var(--border-color); border-radius: 4px; color: var(--text-main);">Prev</button>
-                            <span id="pageInfo" style="font-size: 0.875rem; color: var(--text-muted);">Page 1 of 1</span>
-                            <button id="btnNext" style="padding: 2px 8px; cursor: pointer; background: #fff; border: 1px solid var(--border-color); border-radius: 4px; color: var(--text-main);">Next</button>
+                            <button id="btnPrev">Prev</button>
+                            <span id="pageInfo">Page 1 of 1</span>
+                            <button id="btnNext">Next</button>
                         </div>
                     </div>
                     <span class="status-indicator">Ready</span>
                 </div>
+
                 <div class="output-body">
                     <div id="result">
                         <div class="empty-state">Select an option above to load data...</div>
                     </div>
+
                     <div id="salesGraphContainer" style="display: none;">
                         <div class="graph-controls">
-                            <div class="control-group">
-                                <label for="timeRange">Time Range:</label>
-                                <select id="timeRange">
-                                    <option value="7">Last 7 days</option>
-                                    <option value="30">Last 30 days</option>
-                                    <option value="90">Last 90 days</option>
-                                </select>
-                            </div>
-                            <button id="refreshGraph" class="refresh-btn">Refresh</button>
+                            <label for="timeRange">Time Range:</label>
+                            <select id="timeRange">
+                                <option value="7">Last 7 days</option>
+                                <option value="30">Last 30 days</option>
+                                <option value="90">Last 90 days</option>
+                            </select>
+                            <button id="refreshGraph">Refresh</button>
                         </div>
+
                         <div class="chart-container">
                             <canvas id="salesChart"></canvas>
                         </div>
+
                         <div class="graph-stats">
                             <div class="stat-item">
                                 <span class="stat-label">Total Sales:</span>
@@ -165,27 +137,60 @@
                     </div>
                 </div>
             </section>
-        </main>
 
-        <!-- Order Details Modal -->
-        <div id="orderModal" class="modal" style="display: none;">
-            <div class="modal-content">
-                <span class="close-modal" id="closeOrderModal">&times;</span>
-                <h2>Order Details</h2>
-                <div id="orderDetailsContent"></div>
-            </div>
-        </div>
+            <div id="forecastSalesHistory" style="display:none; margin-top:30px;">
+                        <h3>Sales History</h3>
 
-        <!-- Forecast Details Modal -->
-        <div id="forecastModal" class="modal" style="display: none;">
-            <div class="modal-content">
-                <span class="close-modal" id="closeForecastModal">&times;</span>
-                <h2>Forecast Details</h2>
-                <div id="forecastDetailsContent"></div>
-            </div>
-        </div>
-
+    <div class="sales-tabs">
+        <button class="tab active" onclick="switchSalesTab('daily')">Daily</button>
+        <button class="tab" onclick="switchSalesTab('weekly')">Weekly</button>
+        <button class="tab" onclick="switchSalesTab('monthly')">Monthly</button>
     </div>
+
+    <!-- DAILY -->
+    <div id="daily-tab" class="tab-content active">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Product</th>
+                    <th>Day</th>
+                    <th>Total</th>
+                </tr>
+            </thead>
+            <tbody id="dailyTableBody"></tbody>
+        </table>
+    </div>
+
+    <!-- WEEKLY -->
+    <div id="weekly-tab" class="tab-content">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Product</th>
+                <th>Week</th>
+                <th>Product Total</th>
+                <th>Total Sales of The Week</th>
+            </tr>
+        </thead>
+        <tbody id="weeklyTableBody"></tbody>
+    </table>
+</div>
+
+    <!-- MONTHLY -->
+    <div id="monthly-tab" class="tab-content">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Product</th>
+                <th>Month</th>
+                <th>Product Total</th>
+                <th>Total Sales of The Month</th>
+            </tr>
+        </thead>
+        <tbody id="monthlyTableBody"></tbody>
+    </table>
+</div>
+
     <script src="/app.js"></script>
 </body>
 
