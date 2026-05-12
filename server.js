@@ -20,12 +20,13 @@ app.use(express.json());
 
 app.use(express.static(path.join(__dirname, 'public')));
 
+app.use('/api/job/cron/', cronRoutes);
 app.use('/api/auth/', authRoutes);
 app.use('/api/forecast/', analyticsRoutes);
 app.use('/api/inventory/', inventoryRoutes);
 app.use('/api/sales/', salesRoutes);
 app.use('/api/pricing/', pricingRoutes);
-app.use('/api/job/cron', cronRoutes);
+
 
 app.get(/.*/, (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
