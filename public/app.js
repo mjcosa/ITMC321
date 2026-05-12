@@ -9,6 +9,11 @@
   let currentPage = 1;
   const pageSize = 10;
 
+  function hideForecastHistory() {
+  const el = document.getElementById("forecastSalesHistory");
+  if (el) el.style.display = "none";
+}
+
   const paginationControls = document.getElementById("pagination-controls");
   const btnPrev = document.getElementById("btnPrev");
   const btnNext = document.getElementById("btnNext");
@@ -235,15 +240,17 @@
     return res.json();
   }
 
-  document.getElementById("btnOrders").addEventListener("click", async () => {
-    showLoading("Loading orders...");
-    try {
-      const data = await get(`${apiBase}/sales/orders`);
-      showOrders(data);
-    } catch (e) {
-      showError(e);
-    }
-  });
+document.getElementById("btnOrders").addEventListener("click", async () => {
+  hideForecastHistory();
+  showLoading("Loading orders...");
+
+  try {
+    const data = await get(`${apiBase}/sales/orders`);
+    showOrders(data);
+  } catch (e) {
+    showError(e);
+  }
+});
 
   function showOrders(orders) {
     hideSalesGraph();
@@ -361,37 +368,47 @@
   });
 
   document.getElementById("btnPayments").addEventListener("click", async () => {
-    showLoading("Loading payments...");
+  hideForecastHistory();
+  showLoading("Loading payments...");
+
+  try {
+    const data = await get(`${apiBase}/sales/payments`);
+    show(data);
+  } catch (e) {
+    showError(e);
+  }
+});
+
+document.getElementById("btnInventory")
+  .addEventListener("click", async () => {
+
+    hideForecastHistory();
+
+    showLoading("Loading inventory...");
     try {
-      const data = await get(`${apiBase}/sales/payments`);
+      const data = await get(`${apiBase}/inventory/`);
       show(data);
     } catch (e) {
       showError(e);
     }
   });
 
-  document
-    .getElementById("btnInventory")
-    .addEventListener("click", async () => {
-      showLoading("Loading inventory...");
-      try {
-        const data = await get(`${apiBase}/inventory/`);
-        show(data);
-      } catch (e) {
-        showError(e);
-      }
-    });
+document.getElementById("btnForecast").addEventListener("click", async () => {
+  showLoading("Loading forecast...");
 
-  document.getElementById("btnForecast").addEventListener("click", async () => {
-    showLoading("Loading forecast...");
-    try {
-      const data = await get(`${apiBase}/forecast/`); 
-      show(data);
-    } catch (e) {
-      showError(e);
-    }
-  });
+  hideSalesGraph();
 
+  try {
+    const data = await get(`${apiBase}/forecast/`);
+    show(data);
+
+    const history = document.getElementById("forecastSalesHistory");
+    if (history) history.style.display = "block";
+
+  } catch (e) {
+    showError(e);
+  }
+});
   // Sales Graph functionality
   function showSalesGraph() {
     if (paginationControls) paginationControls.style.display = "none";
@@ -501,55 +518,279 @@
   }
 
   async function loadSalesGraph() {
-    showSalesGraph();
-    
-    const timeRange = parseInt(document.getElementById('timeRange').value);
-    
-    try {
-      const orders = await get(`${apiBase}/sales/orders`);
-      
-      if (!Array.isArray(orders)) {
-        throw new Error('Invalid sales data format');
-      }
+  showSalesGraph();
 
-      const processedData = processSalesData(orders);
-      
-      const allDates = Object.keys(processedData.salesByDate).sort((a, b) => new Date(a) - new Date(b));
-      const newestDate = allDates.length > 0 ? new Date(allDates[allDates.length - 1]) : new Date();
+  const selectedRange = document.getElementById('timeRange').value;
 
-      const recentDates = [];
-      const recentData = [];
+  let timeRange = 7;
 
-      for (let i = timeRange - 1; i >= 0; i--) {
-        const targetDate = new Date(newestDate);
-        targetDate.setDate(newestDate.getDate() - i);
-        const dateKey = targetDate.toLocaleDateString();
-
-        recentDates.push(dateKey);
-        recentData.push(processedData.salesByDate[dateKey] || 0); // Force $0 if missing
-      }
-      // --------------------------
-      
-      createChart(recentDates, recentData);
-      updateStats(processedData);
-      
-    } catch (error) {
-      console.error('Error loading sales graph:', error);
-      showError(error);
-      hideSalesGraph();
-    }
+  if (selectedRange === "daily") {
+    timeRange = 7;
+  } else if (selectedRange === "weekly") {
+    timeRange = 30;
+  } else if (selectedRange === "monthly") {
+    timeRange = 90;
   }
 
+  try {
+    const orders = await get(`${apiBase}/sales/orders`);
+
+    if (!Array.isArray(orders)) {
+      throw new Error('Invalid sales data format');
+    }
+
+    const processedData = processSalesData(orders);
+
+    const allDates = Object.keys(processedData.salesByDate).sort(
+      (a, b) => new Date(a) - new Date(b)
+    );
+
+    const newestDate =
+      allDates.length > 0
+        ? new Date(allDates[allDates.length - 1])
+        : new Date();
+
+    const recentDates = [];
+    const recentData = [];
+
+    for (let i = timeRange - 1; i >= 0; i--) {
+      const targetDate = new Date(newestDate);
+      targetDate.setDate(newestDate.getDate() - i);
+
+      const dateKey = targetDate.toLocaleDateString();
+
+      recentDates.push(dateKey);
+
+      // Use 0 if no sales on that day
+      recentData.push(processedData.salesByDate[dateKey] || 0);
+    }
+
+    createChart(recentDates, recentData);
+    updateStats(processedData);
+
+  } catch (error) {
+    console.error('Error loading sales graph:', error);
+    showError(error);
+    hideSalesGraph();
+  }
+}
+
   // Event listeners for sales graph
-  document.getElementById("btnSalesGraph")?.addEventListener("click", loadSalesGraph);
-  
+document.getElementById("btnSalesGraph").addEventListener("click", async () => {
+  hideForecastHistory();
+  loadSalesGraph();
+});  
   document.getElementById("refreshGraph")?.addEventListener("click", loadSalesGraph);
   
   document.getElementById("timeRange")?.addEventListener("change", loadSalesGraph);
 
   // Logout functionality
   document.getElementById("btnLogout")?.addEventListener("click", () => {
-    localStorage.removeItem("token");
-    window.location.href = "/login.html";
+  localStorage.removeItem("token");
+  window.location.href = "/login.html";
+});
+
+async function loadDailySales() {
+  const tbody = document.getElementById("dailyTableBody");
+  if (!tbody) return;
+
+  tbody.innerHTML = "Loading...";
+
+  try {
+    const orders = await get(`${apiBase}/sales/orders`);
+
+    const grouped = {};
+
+    orders.forEach(order => {
+      const product =
+        order.items?.[0]?.product_name ||
+        order.product_name ||
+        "Unknown Product";
+
+      const day = new Date(order.createdAt).toLocaleDateString();
+
+      const amount = parseFloat(order.total_amount || 0);
+
+      const key = product + "-" + day;
+
+      if (!grouped[key]) {
+        grouped[key] = {
+          product,
+          day,
+          total: 0
+        };
+      }
+
+      grouped[key].total += amount;
+    });
+
+    const rows = Object.values(grouped)
+      .map(row => `
+        <tr>
+          <td>${row.product}</td>
+          <td>${row.day}</td>
+          <td>$${row.total.toFixed(2)}</td>
+        </tr>
+      `)
+      .join("");
+
+    tbody.innerHTML = rows || `<tr><td colspan="3">No data available</td></tr>`;
+
+  } catch (err) {
+    console.error("Daily load error:", err);
+    tbody.innerHTML = `<tr><td colspan="3">Error loading daily data</td></tr>`;
+  }
+}
+
+async function loadWeeklySales() {
+  const tbody = document.getElementById("weeklyTableBody");
+  if (!tbody) return;
+
+  tbody.innerHTML = "Loading...";
+
+  try {
+    const orders = await get(`${apiBase}/sales/orders`);
+
+    const grouped = {};
+    const periodTotals = {};
+
+    orders.forEach(order => {
+      const date = new Date(order.createdAt);
+
+      const day = date.getDay();
+      const diffToMonday = (day === 0 ? -6 : 1) - day;
+
+      const start = new Date(date);
+      start.setDate(date.getDate() + diffToMonday);
+
+      const end = new Date(start);
+      end.setDate(start.getDate() + 6);
+
+      const weekKey = `${start.toLocaleDateString()} - ${end.toLocaleDateString()}`;
+
+      const product = order.items?.[0]?.product_name || "Unknown Product";
+      const amount = parseFloat(order.total_amount || 0);
+
+      const key = weekKey + "-" + product;
+
+      // product-level grouping
+      if (!grouped[key]) {
+        grouped[key] = {
+          product,
+          period: weekKey,
+          total: 0
+        };
+      }
+
+      grouped[key].total += amount;
+
+      // period total (ALL products)
+      if (!periodTotals[weekKey]) {
+        periodTotals[weekKey] = 0;
+      }
+      periodTotals[weekKey] += amount;
+    });
+
+    tbody.innerHTML = Object.values(grouped)
+      .map(row => `
+        <tr>
+          <td>${row.product}</td>
+          <td>${row.period}</td>
+          <td>$${row.total.toFixed(2)}</td>
+          <td>$${periodTotals[row.period].toFixed(2)}</td>
+        </tr>
+      `)
+      .join("");
+
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="4">Error loading weekly data</td></tr>`;
+  }
+}
+
+async function loadMonthlySales() {
+  const tbody = document.getElementById("monthlyTableBody");
+  if (!tbody) return;
+
+  tbody.innerHTML = "Loading...";
+
+  try {
+    const orders = await get(`${apiBase}/sales/orders`);
+
+    const grouped = {};
+    const periodTotals = {};
+
+    orders.forEach(order => {
+      const date = new Date(order.createdAt);
+
+      const monthKey = date.toLocaleString('default', {
+        month: 'long',
+        year: 'numeric'
+      });
+
+      const product = order.items?.[0]?.product_name || "Unknown Product";
+      const amount = parseFloat(order.total_amount || 0);
+
+      const key = monthKey + "-" + product;
+
+      // product-level grouping
+      if (!grouped[key]) {
+        grouped[key] = {
+          product,
+          period: monthKey,
+          total: 0
+        };
+      }
+
+      grouped[key].total += amount;
+
+      // month-level total
+      if (!periodTotals[monthKey]) {
+        periodTotals[monthKey] = 0;
+      }
+      periodTotals[monthKey] += amount;
+    });
+
+    tbody.innerHTML = Object.values(grouped)
+      .map(row => `
+        <tr>
+          <td>${row.product}</td>
+          <td>${row.period}</td>
+          <td>$${row.total.toFixed(2)}</td>
+          <td>$${periodTotals[row.period].toFixed(2)}</td>
+        </tr>
+      `)
+      .join("");
+
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="4">Error loading monthly data</td></tr>`;
+  }
+}
+
+window.switchSalesTab = function(tabName) {
+
+  document.querySelectorAll(".sales-tabs .tab").forEach(button => {
+    button.classList.remove("active");
   });
+
+  document.querySelectorAll(".tab-content").forEach(content => {
+    content.classList.remove("active");
+  });
+
+  const clickedButton = document.querySelector(
+    `.sales-tabs .tab[onclick="switchSalesTab('${tabName}')"]`
+  );
+
+  if (clickedButton) {
+    clickedButton.classList.add("active");
+  }
+
+  const selectedTab = document.getElementById(`${tabName}-tab`);
+  if (selectedTab) {
+    selectedTab.classList.add("active");
+  }
+
+  if (tabName === "daily") loadDailySales();
+  if (tabName === "weekly") loadWeeklySales();
+  if (tabName === "monthly") loadMonthlySales();
+};
 })();

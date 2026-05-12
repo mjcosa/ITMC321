@@ -547,3 +547,135 @@ footer {
   color: #fff;
 }
 
+.forecast-history {
+  display: none;
+  margin-top: 32px;
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.forecast-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border-color);
+  background-color: #f8fafc;
+}
+
+.forecast-header h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.sales-tabs {
+  display: flex;
+  gap: 12px;
+  padding: 20px 24px 0 24px;
+  flex-wrap: wrap;
+}
+
+.sales-tabs .tab {
+  padding: 10px 18px;
+  border: 1px solid var(--border-color);
+  background-color: white;
+  color: var(--text-main);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.sales-tabs .tab:hover {
+  background-color: #f1f5f9;
+}
+
+.sales-tabs .tab.active {
+  background-color: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+}
+.tab-content {
+  display: none;
+  padding: 24px;
+}
+
+.tab-content.active {
+  display: block;
+}
+
+#forecastSalesHistory .data-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+#forecastSalesHistory .data-table th {
+  background-color: #f8fafc;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+#forecastSalesHistory .data-table td,
+#forecastSalesHistory .data-table th {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+#forecastSalesHistory .data-table tr:last-child td {
+  border-bottom: none;
+}
+
+#forecastSalesHistory .data-table tr:hover td {
+  background-color: #f8fafc;
+}
+
+@media (max-width: 768px) {
+  .sales-tabs {
+    flex-direction: column;
+  }
+
+  .sales-tabs .tab {
+    width: 100%;
+  }
+
+  .tab-content {
+    padding: 16px;
+  }
+}
+.sales-tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.sales-tabs .tab {
+  padding: 10px 20px;
+  border: 1px solid var(--border-color);
+  background: white;
+  cursor: pointer;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: 0.2s;
+}
+
+.sales-tabs .tab:hover {
+  background: #f1f5f9;
+}
+
+.sales-tabs .tab.active {
+  background: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+}
+
+.tab-content {
+  display: none;
+}
+
+.tab-content.active {
+  display: block;
+}
