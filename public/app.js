@@ -48,10 +48,14 @@
 
     // Normalize to array (handles objects containing an array like { data: [...] })
     let dataArray = Array.isArray(obj) ? obj : [obj];
-    if (!Array.isArray(obj) && typeof obj === "object") {
-      const keys = Object.keys(obj);
-      if (keys.length === 1 && Array.isArray(obj[keys[0]])) {
-        dataArray = obj[keys[0]];
+    if (!Array.isArray(obj) && typeof obj === "object" && obj !== null) {
+      if (Array.isArray(obj.data)) {
+        dataArray = obj.data;
+      } else {
+        const keys = Object.keys(obj);
+        if (keys.length === 1 && Array.isArray(obj[keys[0]])) {
+          dataArray = obj[keys[0]];
+        }
       }
     }
 
