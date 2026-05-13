@@ -46,40 +46,72 @@
             </div>
 
             <div class="action-cards">
-                <button id="btnOrders" class="card">
-                    <div class="card-icon blue"></div>
+                <button type="button" id="btnOrders" class="card">
+                    <div class="card-icon blue" aria-hidden="true">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z" />
+                            <path d="M3 6h18" />
+                            <path d="M16 10a4 4 0 0 1-8 0" />
+                        </svg>
+                    </div>
                     <div class="card-content">
                         <h3>Sales Orders</h3>
                         <p>Fetch latest order data</p>
                     </div>
                 </button>
 
-                <button id="btnSalesGraph" class="card">
-                    <div class="card-icon teal"></div>
+                <button type="button" id="btnSalesGraph" class="card">
+                    <div class="card-icon teal" aria-hidden="true">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 3v18h18" />
+                            <path d="m7 12 4-4 4 4 6-6" />
+                            <path d="M17 8h4v4" />
+                        </svg>
+                    </div>
                     <div class="card-content">
                         <h3>Sales Graph</h3>
                         <p>Visualize sales trends</p>
                     </div>
                 </button>
 
-                <button id="btnPayments" class="card">
-                    <div class="card-icon green"></div>
+                <button type="button" id="btnPayments" class="card">
+                    <div class="card-icon green" aria-hidden="true">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect width="20" height="14" x="2" y="5" rx="2" />
+                            <line x1="2" x2="22" y1="10" y2="10" />
+                        </svg>
+                    </div>
                     <div class="card-content">
                         <h3>Payments</h3>
                         <p>View recent transactions</p>
                     </div>
                 </button>
 
-                <button id="btnInventory" class="card">
-                    <div class="card-icon orange"></div>
+                <button type="button" id="btnInventory" class="card">
+                    <div class="card-icon orange" aria-hidden="true">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />
+                            <path d="m3.3 7 8.7 5 8.7-5" />
+                            <path d="M12 22V12" />
+                        </svg>
+                    </div>
                     <div class="card-content">
                         <h3>Inventory</h3>
                         <p>Check current stock levels</p>
                     </div>
                 </button>
 
-                <button id="btnForecast" class="card">
-                    <div class="card-icon purple"></div>
+                <button type="button" id="btnForecast" class="card">
+                    <div class="card-icon purple" aria-hidden="true">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+                        </svg>
+                    </div>
                     <div class="card-content">
                         <h3>Forecast</h3>
                         <p>Predict future demand</p>
@@ -89,12 +121,24 @@
 
             <section class="output-section">
                 <div class="output-header">
-                    <div style="display: flex; align-items: center; gap: 16px;">
+                    <div class="output-header-main">
                         <h3>Data Explorer</h3>
-                        <div id="pagination-controls" style="display: none; align-items: center; gap: 8px;">
-                            <button id="btnPrev">Prev</button>
-                            <span id="pageInfo">Page 1 of 1</span>
-                            <button id="btnNext">Next</button>
+                        <div id="pagination-controls" class="pagination-controls" style="display: none;">
+                            <button type="button" id="btnPrev" class="pagination-btn" aria-label="Previous page">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <path d="m15 18-6-6 6-6" />
+                                </svg>
+                                Previous
+                            </button>
+                            <span id="pageInfo" class="pagination-info">Page 1 of 1</span>
+                            <button type="button" id="btnNext" class="pagination-btn" aria-label="Next page">
+                                Next
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <path d="m9 18 6-6-6-6" />
+                                </svg>
+                            </button>
                         </div>
                     </div>
                     <span class="status-indicator">Ready</span>
@@ -134,62 +178,88 @@
                                 <span id="totalOrders" class="stat-value">0</span>
                             </div>
                         </div>
+
+                        <div id="forecastSalesHistory" class="forecast-history">
+                            <h3>Sales History</h3>
+
+                            <div class="sales-tabs">
+                                <button type="button" class="tab active" onclick="switchSalesTab('daily')">Daily</button>
+                                <button type="button" class="tab" onclick="switchSalesTab('weekly')">Weekly</button>
+                                <button type="button" class="tab" onclick="switchSalesTab('monthly')">Monthly</button>
+                            </div>
+
+                            <div id="daily-tab" class="tab-content active">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Product</th>
+                                            <th>Day</th>
+                                            <th>Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="dailyTableBody"></tbody>
+                                </table>
+                            </div>
+
+                            <div id="weekly-tab" class="tab-content">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Product</th>
+                                            <th>Week</th>
+                                            <th>Product Total</th>
+                                            <th>Total Sales of The Week</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="weeklyTableBody"></tbody>
+                                </table>
+                            </div>
+
+                            <div id="monthly-tab" class="tab-content">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Product</th>
+                                            <th>Month</th>
+                                            <th>Product Total</th>
+                                            <th>Total Sales of The Month</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="monthlyTableBody"></tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </section>
-
-            <div id="forecastSalesHistory" style="display:none; margin-top:30px;">
-                        <h3>Sales History</h3>
-
-    <div class="sales-tabs">
-        <button class="tab active" onclick="switchSalesTab('daily')">Daily</button>
-        <button class="tab" onclick="switchSalesTab('weekly')">Weekly</button>
-        <button class="tab" onclick="switchSalesTab('monthly')">Monthly</button>
+        </main>
     </div>
 
-    <!-- DAILY -->
-    <div id="daily-tab" class="tab-content active">
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>Product</th>
-                    <th>Day</th>
-                    <th>Total</th>
-                </tr>
-            </thead>
-            <tbody id="dailyTableBody"></tbody>
-        </table>
+    <div id="orderModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="orderModalTitle">
+        <div class="modal-content">
+            <span id="closeOrderModal" class="close-modal" role="button" tabindex="0" title="Close">&times;</span>
+            <h3 id="orderModalTitle" style="margin-top: 0;">Order details</h3>
+            <div id="orderDetailsContent"></div>
+        </div>
     </div>
 
-    <!-- WEEKLY -->
-    <div id="weekly-tab" class="tab-content">
-    <table class="data-table">
-        <thead>
-            <tr>
-                <th>Product</th>
-                <th>Week</th>
-                <th>Product Total</th>
-                <th>Total Sales of The Week</th>
-            </tr>
-        </thead>
-        <tbody id="weeklyTableBody"></tbody>
-    </table>
-</div>
+    <div id="forecastDetailModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="forecastDetailTitle">
+        <div class="modal-content modal-content-wide">
+            <span id="closeForecastDetailModal" class="close-modal" role="button" tabindex="0" title="Close">&times;</span>
+            <h3 id="forecastDetailTitle" style="margin-top: 0;">Forecast details</h3>
+            <p class="forecast-detail-hint">Pricing and recommendation context for this product.</p>
+            <div id="forecastDetailContent" class="forecast-detail-body"></div>
+        </div>
+    </div>
 
-    <!-- MONTHLY -->
-    <div id="monthly-tab" class="tab-content">
-    <table class="data-table">
-        <thead>
-            <tr>
-                <th>Product</th>
-                <th>Month</th>
-                <th>Product Total</th>
-                <th>Total Sales of The Month</th>
-            </tr>
-        </thead>
-        <tbody id="monthlyTableBody"></tbody>
-    </table>
-</div>
+    <div id="paymentDetailModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="paymentDetailTitle">
+        <div class="modal-content modal-content-wide">
+            <span id="closePaymentDetailModal" class="close-modal" role="button" tabindex="0" title="Close">&times;</span>
+            <h3 id="paymentDetailTitle" style="margin-top: 0;">Payment details</h3>
+            <p class="forecast-detail-hint">Core transaction timestamps for this payment.</p>
+            <div id="paymentDetailContent" class="forecast-detail-body"></div>
+        </div>
+    </div>
 
     <script src="/app.js"></script>
 </body>
