@@ -18,7 +18,7 @@ const forecastSchema = new mongoose.Schema({
   modelUsed: { type: String, required: true },
 
   forecastRecommendation: { type: String, default: '' },
-  pricingSuggestedPrice: { type: Number },
+  suggestedPrice: { type: Number },
   pricingReason: { type: String, default: '' },
   totalHistoricalSales: { type: Number, default: 0 },
 

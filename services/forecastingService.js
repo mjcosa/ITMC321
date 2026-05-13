@@ -21,8 +21,10 @@ const fetchSubsystemData = async (uploadedData) => {
 // TRANSFORM
 const cleanAndTransformData = (rawInventory, rawSales) => {
   const inventoryMap = {};
+  
+  // Process Inventory Data
   rawInventory.forEach(item => {
-    const productId = item.product_id || item.productId || item.sku || 'UNKNOWN';
+    const productId = item.product_id || item.productId || item.sku || item._id || 'UNKNOWN';
     if (productId === 'UNKNOWN') return;
     
     if (!inventoryMap[productId]) {
@@ -37,36 +39,39 @@ const cleanAndTransformData = (rawInventory, rawSales) => {
     inventoryMap[productId].currentStock += Number(item.current_stock ?? item.currentStock ?? item.stock ?? 0) || 0;
   });
   
-  const inventory = Object.values(inventoryMap);
+  const validSales = [];
 
-  const sales = [];
-
+  // Process Sales Data
   rawSales.forEach(order => {
-    // Skip failed/cancelled orders
     const status = (order.payment_status || order.order_status || '').toString().toLowerCase();
-    if (status !== 'confirmed' && status !== 'completed') {
-      return; 
-    }
+    if (status !== 'confirmed' && status !== 'completed') return; 
 
-    // Parse the Date
-    let rawDate = order.payment_date || order.createdAt || order.orderDate || new Date();
-    let parsedDate = new Date(rawDate);
+    let parsedDate = new Date(order.createdAt || new Date());
     if (isNaN(parsedDate)) parsedDate = new Date();
     const dateString = parsedDate.toISOString().split('T')[0];
 
-    // Extract the actual products bought inside this order
     if (order.items && Array.isArray(order.items)) {
       order.items.forEach(item => {
-        sales.push({
-          productId: item.product_id || item.productId || item.sku || 'UNKNOWN',
-          quantity: Number(item.quantity || item.qty || 1), 
+        const productId = item.product_id || item.productId || 'UNKNOWN';
+        if (productId === 'UNKNOWN') return;
+
+        if (!inventoryMap[productId]) {
+          inventoryMap[productId] = {
+            productId: productId,
+            productName: item.product_name || item.name || `[Archived] ${productId}`,
+            currentStock: 0, 
+            price: Number(item.price || item.subtotal / item.quantity || 0)
+          };
+        }
+
+        validSales.push({
+          productId: productId,
+          quantity: Number(item.quantity || 1), 
           date: dateString
         });
       });
     }
   });
-
-  const validSales = sales.filter(sale => sale.productId !== 'UNKNOWN' && sale.quantity > 0);
 
   const salesByProductAndDate = {};
   
@@ -74,9 +79,7 @@ const cleanAndTransformData = (rawInventory, rawSales) => {
     if (!salesByProductAndDate[productId]) {
       salesByProductAndDate[productId] = { 
         totalSales: 0, 
-        dailyData: {},
-        weeklyData: {},
-        monthlyData: {}
+        dailyData: {}, weeklyData: {}, monthlyData: {}
       };
     }
 
@@ -93,10 +96,11 @@ const cleanAndTransformData = (rawInventory, rawSales) => {
     salesByProductAndDate[productId].totalSales += quantity;
   });
 
+  const inventory = Object.values(inventoryMap);
+
   return { inventory, salesByProductAndDate };
 };
 
-// LOAD / COMPUTE
 const calculateForecasts = async (uploadedData = null) => {
   const { rawInventory, rawSales } = await fetchSubsystemData(uploadedData);
   const { inventory, salesByProductAndDate } = cleanAndTransformData(rawInventory, rawSales);
@@ -180,6 +184,11 @@ const calculateForecasts = async (uploadedData = null) => {
       suggestedRestockQty: restockAmount,
       stockoutRisk: stockoutRisk,
       modelUsed: 'Moving Average / Linear Baseline',
+
+      forecastRecommendation: recommendation, 
+      suggestedPrice: suggestedPrice,       
+      pricingReason: strategyReason,
+      totalHistoricalSales: salesRecord.totalSales,
 
       salesHistory: {
         daily: salesRecord.dailyData,
