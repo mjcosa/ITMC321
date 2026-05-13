@@ -328,8 +328,6 @@
         <th>Product Id</th>
         <th>Product Name</th>
         <th>Target Period</th>
-        <th>Predicted Demand</th>
-        <th>Suggested Restock Qty</th>
         <th>Stockout Risk</th>
         <th>Action</th>
       </tr>
@@ -349,16 +347,12 @@
       const pid = forecastProductId(row);
       const pname = forecastProductName(row);
       const period = forecastTargetPeriod(row);
-      const demand = formatForecastMetric(forecastPredictedDemand(row));
-      const restock = formatForecastMetric(forecastSuggestedRestock(row));
       const risk = forecastStockoutRisk(row);
 
       tr.innerHTML = `
         <td>${escapeHtml(pid)}</td>
         <td>${escapeHtml(pname)}</td>
         <td>${escapeHtml(period)}</td>
-        <td>${escapeHtml(demand)}</td>
-        <td>${escapeHtml(restock)}</td>
         <td>${escapeHtml(risk)}</td>
         <td><button type="button" class="view-forecast-btn">View details</button></td>
       `;
@@ -459,7 +453,22 @@
         : escapeHtml(String(historicalSalesRaw));
     }
 
+    const predictedDemandDisplay = escapeHtml(
+      formatForecastMetric(forecastPredictedDemand(row)),
+    );
+    const suggestedRestockDisplay = escapeHtml(
+      formatForecastMetric(forecastSuggestedRestock(row)),
+    );
+
     body.innerHTML = `
+      <div class="forecast-detail-field">
+        <span class="forecast-detail-label">Predicted demand</span>
+        <span class="forecast-detail-value">${predictedDemandDisplay}</span>
+      </div>
+      <div class="forecast-detail-field">
+        <span class="forecast-detail-label">Suggested restock qty</span>
+        <span class="forecast-detail-value">${suggestedRestockDisplay}</span>
+      </div>
       <div class="forecast-detail-field">
         <span class="forecast-detail-label">Forecast recommendation</span>
         <span class="forecast-detail-value">${recommendationDisplay}</span>
