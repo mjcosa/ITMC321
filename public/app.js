@@ -1,5 +1,15 @@
 (function () {
   const apiBase = "/api";
+
+  function escapeHtml(value) {
+    if (value === undefined || value === null) return "";
+    return String(value)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
   const resultEl = document.getElementById("result");
   const salesGraphContainer = document.getElementById("salesGraphContainer");
   let salesChart = null;
@@ -26,6 +36,7 @@
         currentPage--;
         if (currentView === "orders") renderOrdersTable();
         else if (currentView === "forecast") renderForecastTable();
+        else if (currentView === "payments") renderPaymentsTable();
         else renderTable();
       }
     });
@@ -35,6 +46,7 @@
         currentPage++;
         if (currentView === "orders") renderOrdersTable();
         else if (currentView === "forecast") renderForecastTable();
+        else if (currentView === "payments") renderPaymentsTable();
         else renderTable();
       }
     });
@@ -42,7 +54,6 @@
 
   function show(obj) {
     currentView = "default";
-    // Hide sales graph when showing other data
     hideSalesGraph();
     if (salesChart) {
       salesChart.destroy();
@@ -154,10 +165,6 @@
         pageInfo.textContent = `Page ${currentPage} of ${totalPages}`;
         btnPrev.disabled = currentPage === 1;
         btnNext.disabled = currentPage === totalPages;
-        btnPrev.style.opacity = currentPage === 1 ? "0.5" : "1";
-        btnPrev.style.cursor = currentPage === 1 ? "default" : "pointer";
-        btnNext.style.opacity = currentPage === totalPages ? "0.5" : "1";
-        btnNext.style.cursor = currentPage === totalPages ? "default" : "pointer";
       } else {
         paginationControls.style.display = "none";
       }
@@ -212,6 +219,469 @@
     table.appendChild(tbody);
 
     resultEl.appendChild(table);
+  }
+
+  function parseForecastDataArray(obj) {
+    if (!obj) return [];
+    if (Array.isArray(obj)) return obj;
+    if (typeof obj === "object" && Array.isArray(obj.data)) return obj.data;
+    if (typeof obj === "object" && obj !== null) {
+      const keys = Object.keys(obj);
+      if (keys.length === 1 && Array.isArray(obj[keys[0]])) return obj[keys[0]];
+    }
+    return [];
+  }
+
+  function forecastProductId(row) {
+    if (!row || typeof row !== "object") return "-";
+    return row.productId ?? row.product_id ?? "-";
+  }
+
+  function forecastProductName(row) {
+    if (!row || typeof row !== "object") return "-";
+    return row.productName ?? row.product_name ?? "-";
+  }
+
+  function forecastTargetPeriod(row) {
+    if (!row || typeof row !== "object") return "Next 30 Days";
+    return row.targetPeriod ?? row.target_period ?? "Next 30 Days";
+  }
+
+  function forecastPredictedDemand(row) {
+    if (!row || typeof row !== "object") return undefined;
+    const v =
+      row.predictedDemand ??
+      row.forecast_predicted_demand_next_30_days;
+    return v;
+  }
+
+  function forecastSuggestedRestock(row) {
+    if (!row || typeof row !== "object") return undefined;
+    return (
+      row.suggestedRestockQty ??
+      row.forecast_suggested_restock_qty ??
+      row.suggested_restock_qty
+    );
+  }
+
+  function forecastStockoutRisk(row) {
+    if (!row || typeof row !== "object") return "-";
+    return row.stockoutRisk ?? row.analytics_stockout_risk ?? "-";
+  }
+
+  function formatForecastMetric(value) {
+    if (value === undefined || value === null || value === "") return "-";
+    const n = Number(value);
+    if (!Number.isNaN(n)) return Number.isInteger(n) ? String(n) : n.toFixed(2);
+    return String(value);
+  }
+
+  function showForecast(obj) {
+    currentView = "forecast";
+    hideSalesGraph();
+    if (salesChart) {
+      salesChart.destroy();
+      salesChart = null;
+    }
+
+    resultEl.innerHTML = "";
+    if (paginationControls) paginationControls.style.display = "none";
+
+    const dataArray = parseForecastDataArray(obj);
+    if (dataArray.length === 0) {
+      resultEl.innerHTML =
+        '<div class="empty-state">No forecast data available.</div>';
+      currentDataArray = [];
+      return;
+    }
+
+    currentDataArray = dataArray.filter(
+      (item) => item && typeof item === "object",
+    );
+    currentPage = 1;
+    renderForecastTable();
+  }
+
+  function renderForecastTable() {
+    resultEl.innerHTML = "";
+
+    if (currentDataArray.length === 0) return;
+
+    const totalPages = Math.ceil(currentDataArray.length / pageSize);
+    if (paginationControls) {
+      if (totalPages > 1) {
+        paginationControls.style.display = "flex";
+        pageInfo.textContent = `Page ${currentPage} of ${totalPages}`;
+        btnPrev.disabled = currentPage === 1;
+        btnNext.disabled = currentPage === totalPages;
+      } else {
+        paginationControls.style.display = "none";
+      }
+    }
+
+    const table = document.createElement("table");
+    table.className = "data-table";
+
+    const thead = document.createElement("thead");
+    thead.innerHTML = `
+      <tr>
+        <th>Product Id</th>
+        <th>Product Name</th>
+        <th>Target Period</th>
+        <th>Predicted Demand</th>
+        <th>Suggested Restock Qty</th>
+        <th>Stockout Risk</th>
+        <th>Action</th>
+      </tr>
+    `;
+    table.appendChild(thead);
+
+    const tbody = document.createElement("tbody");
+    const startIndex = (currentPage - 1) * pageSize;
+    const endIndex = Math.min(
+      startIndex + pageSize,
+      currentDataArray.length,
+    );
+    const pageRows = currentDataArray.slice(startIndex, endIndex);
+
+    pageRows.forEach((row) => {
+      const tr = document.createElement("tr");
+      const pid = forecastProductId(row);
+      const pname = forecastProductName(row);
+      const period = forecastTargetPeriod(row);
+      const demand = formatForecastMetric(forecastPredictedDemand(row));
+      const restock = formatForecastMetric(forecastSuggestedRestock(row));
+      const risk = forecastStockoutRisk(row);
+
+      tr.innerHTML = `
+        <td>${escapeHtml(pid)}</td>
+        <td>${escapeHtml(pname)}</td>
+        <td>${escapeHtml(period)}</td>
+        <td>${escapeHtml(demand)}</td>
+        <td>${escapeHtml(restock)}</td>
+        <td>${escapeHtml(risk)}</td>
+        <td><button type="button" class="view-forecast-btn">View details</button></td>
+      `;
+
+      const detailBtn = tr.querySelector(".view-forecast-btn");
+      if (detailBtn) {
+        detailBtn.addEventListener("click", () => openForecastDetailModal(row));
+      }
+      tbody.appendChild(tr);
+    });
+
+    table.appendChild(tbody);
+    resultEl.appendChild(table);
+  }
+
+  function openForecastDetailModal(row) {
+    const modal = document.getElementById("forecastDetailModal");
+    const body = document.getElementById("forecastDetailContent");
+    const title = document.getElementById("forecastDetailTitle");
+    if (!modal || !body) {
+      console.error("Forecast detail modal markup is missing.");
+      return;
+    }
+
+    const pid = forecastProductId(row);
+    if (title) {
+      title.textContent = `Forecast details — ${pid}`;
+    }
+
+    const recommendation =
+      row.forecast_recommendation ??
+      row.forecastRecommendation ??
+      null;
+    const suggestedPriceRaw =
+      row.pricing_suggested_price ??
+      row.suggestedPrice ??
+      row.pricingSuggestedPrice ??
+      null;
+    const pricingReason =
+      row.pricing_reason ??
+      row.pricingReason ??
+      row.strategyReason ??
+      null;
+    let historicalSalesRaw =
+      row.analytics_total_historical_sales ??
+      row.totalHistoricalSales ??
+      null;
+    if (
+      (historicalSalesRaw === null ||
+        historicalSalesRaw === undefined ||
+        historicalSalesRaw === "") &&
+      row.salesHistory &&
+      typeof row.salesHistory === "object"
+    ) {
+      const daily = row.salesHistory.daily;
+      if (daily && typeof daily === "object") {
+        let sum = 0;
+        const vals =
+          typeof daily.values === "function"
+            ? Array.from(daily.values())
+            : Object.values(daily);
+        vals.forEach((v) => {
+          sum += Number(v) || 0;
+        });
+        if (sum > 0 || Object.keys(daily).length > 0) {
+          historicalSalesRaw = sum;
+        }
+      }
+    }
+
+    const recommendationDisplay =
+      recommendation !== null && recommendation !== undefined && recommendation !== ""
+        ? escapeHtml(recommendation)
+        : "—";
+
+    let suggestedPriceDisplay = "—";
+    if (suggestedPriceRaw !== null && suggestedPriceRaw !== undefined && suggestedPriceRaw !== "") {
+      const n = Number(suggestedPriceRaw);
+      suggestedPriceDisplay = Number.isFinite(n)
+        ? escapeHtml(`$${n.toFixed(2)}`)
+        : escapeHtml(String(suggestedPriceRaw));
+    }
+
+    const pricingReasonDisplay =
+      pricingReason !== null && pricingReason !== undefined && pricingReason !== ""
+        ? escapeHtml(pricingReason)
+        : "—";
+
+    let historicalSalesDisplay = "—";
+    if (
+      historicalSalesRaw !== null &&
+      historicalSalesRaw !== undefined &&
+      historicalSalesRaw !== ""
+    ) {
+      const n = Number(historicalSalesRaw);
+      historicalSalesDisplay = Number.isFinite(n)
+        ? escapeHtml(String(n))
+        : escapeHtml(String(historicalSalesRaw));
+    }
+
+    body.innerHTML = `
+      <div class="forecast-detail-field">
+        <span class="forecast-detail-label">Forecast recommendation</span>
+        <span class="forecast-detail-value">${recommendationDisplay}</span>
+      </div>
+      <div class="forecast-detail-field">
+        <span class="forecast-detail-label">Suggested price</span>
+        <span class="forecast-detail-value">${suggestedPriceDisplay}</span>
+      </div>
+      <div class="forecast-detail-field">
+        <span class="forecast-detail-label">Pricing reason</span>
+        <span class="forecast-detail-value">${pricingReasonDisplay}</span>
+      </div>
+      <div class="forecast-detail-field">
+        <span class="forecast-detail-label">Total historical sales</span>
+        <span class="forecast-detail-value">${historicalSalesDisplay}</span>
+      </div>
+    `;
+
+    modal.style.display = "block";
+  }
+
+  function parsePaymentsDataArray(obj) {
+    if (!obj) return [];
+    if (Array.isArray(obj)) return obj;
+    if (typeof obj === "object" && Array.isArray(obj.data)) return obj.data;
+    if (typeof obj === "object" && obj !== null) {
+      const keys = Object.keys(obj);
+      if (keys.length === 1 && Array.isArray(obj[keys[0]])) return obj[keys[0]];
+    }
+    return [];
+  }
+
+  function paymentTransactionRef(row) {
+    if (!row || typeof row !== "object") return "-";
+    const v =
+      row.transaction_reference ??
+      row.transactionReference ??
+      row.reference ??
+      row.reference_id ??
+      null;
+    if (v !== null && v !== undefined && String(v) !== "") return String(v);
+    if (row._id !== undefined && row._id !== null) return String(row._id);
+    if (row.id !== undefined && row.id !== null) return String(row.id);
+    return "-";
+  }
+
+  function paymentPaymentDateValue(row) {
+    if (!row || typeof row !== "object") return null;
+    return row.payment_date ?? row.paymentDate ?? null;
+  }
+
+  function paymentCreatedAtValue(row) {
+    if (!row || typeof row !== "object") return null;
+    return row.createdAt ?? row.created_at ?? null;
+  }
+
+  function paymentUpdatedAtValue(row) {
+    if (!row || typeof row !== "object") return null;
+    return row.updatedAt ?? row.updated_at ?? null;
+  }
+
+  function formatPaymentDateTime(value) {
+    if (value === null || value === undefined || value === "") return "—";
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return escapeHtml(String(value));
+    return escapeHtml(d.toLocaleString());
+  }
+
+  function paymentAmountDisplay(row) {
+    const raw =
+      row.payment_amount ??
+      row.amount ??
+      row.total ??
+      row.total_amount ??
+      null;
+    if (raw === null || raw === undefined || raw === "") return "—";
+    const n = Number(raw);
+    if (!Number.isFinite(n)) return escapeHtml(String(raw));
+    return escapeHtml(`$${n.toFixed(2)}`);
+  }
+
+  function paymentStatusDisplay(row) {
+    const s = row.payment_status ?? row.status ?? null;
+    if (s === null || s === undefined || s === "") return "—";
+    return escapeHtml(String(s));
+  }
+
+  function showPayments(obj) {
+    currentView = "payments";
+    hideSalesGraph();
+    if (salesChart) {
+      salesChart.destroy();
+      salesChart = null;
+    }
+
+    resultEl.innerHTML = "";
+    if (paginationControls) paginationControls.style.display = "none";
+
+    const dataArray = parsePaymentsDataArray(obj);
+    if (dataArray.length === 0) {
+      resultEl.innerHTML =
+        '<div class="empty-state">No payment data available.</div>';
+      currentDataArray = [];
+      return;
+    }
+
+    currentDataArray = dataArray.filter(
+      (item) => item && typeof item === "object",
+    );
+    currentPage = 1;
+    renderPaymentsTable();
+  }
+
+  function renderPaymentsTable() {
+    resultEl.innerHTML = "";
+
+    if (currentDataArray.length === 0) return;
+
+    const totalPages = Math.ceil(currentDataArray.length / pageSize);
+    if (paginationControls) {
+      if (totalPages > 1) {
+        paginationControls.style.display = "flex";
+        pageInfo.textContent = `Page ${currentPage} of ${totalPages}`;
+        btnPrev.disabled = currentPage === 1;
+        btnNext.disabled = currentPage === totalPages;
+      } else {
+        paginationControls.style.display = "none";
+      }
+    }
+
+    const table = document.createElement("table");
+    table.className = "data-table";
+
+    const thead = document.createElement("thead");
+    thead.innerHTML = `
+      <tr>
+        <th>Transaction reference</th>
+        <th>Payment date</th>
+        <th>Amount</th>
+        <th>Status</th>
+        <th>Action</th>
+      </tr>
+    `;
+    table.appendChild(thead);
+
+    const tbody = document.createElement("tbody");
+    const startIndex = (currentPage - 1) * pageSize;
+    const endIndex = Math.min(
+      startIndex + pageSize,
+      currentDataArray.length,
+    );
+    const pageRows = currentDataArray.slice(startIndex, endIndex);
+
+    pageRows.forEach((row) => {
+      const tr = document.createElement("tr");
+      const ref = paymentTransactionRef(row);
+      const payDate = paymentPaymentDateValue(row);
+
+      tr.innerHTML = `
+        <td>${escapeHtml(ref)}</td>
+        <td>${formatPaymentDateTime(payDate)}</td>
+        <td>${paymentAmountDisplay(row)}</td>
+        <td>${paymentStatusDisplay(row)}</td>
+        <td><button type="button" class="view-payment-detail-btn">View details</button></td>
+      `;
+
+      const detailBtn = tr.querySelector(".view-payment-detail-btn");
+      if (detailBtn) {
+        detailBtn.addEventListener("click", () => openPaymentDetailModal(row));
+      }
+      tbody.appendChild(tr);
+    });
+
+    table.appendChild(tbody);
+    resultEl.appendChild(table);
+  }
+
+  function openPaymentDetailModal(row) {
+    const modal = document.getElementById("paymentDetailModal");
+    const body = document.getElementById("paymentDetailContent");
+    const title = document.getElementById("paymentDetailTitle");
+    if (!modal || !body) {
+      console.error("Payment detail modal markup is missing.");
+      return;
+    }
+
+    const ref = paymentTransactionRef(row);
+    if (title) {
+      title.textContent = `Payment — ${ref}`;
+    }
+
+    const txDisplay = escapeHtml(ref);
+    const paymentDateDisplay = formatPaymentDateTime(
+      paymentPaymentDateValue(row),
+    );
+    const createdAtDisplay = formatPaymentDateTime(
+      paymentCreatedAtValue(row),
+    );
+    const updatedAtDisplay = formatPaymentDateTime(
+      paymentUpdatedAtValue(row),
+    );
+
+    body.innerHTML = `
+      <div class="forecast-detail-field">
+        <span class="forecast-detail-label">Transaction reference</span>
+        <span class="forecast-detail-value">${txDisplay}</span>
+      </div>
+      <div class="forecast-detail-field">
+        <span class="forecast-detail-label">Payment date</span>
+        <span class="forecast-detail-value">${paymentDateDisplay}</span>
+      </div>
+      <div class="forecast-detail-field">
+        <span class="forecast-detail-label">Created at</span>
+        <span class="forecast-detail-value">${createdAtDisplay}</span>
+      </div>
+      <div class="forecast-detail-field">
+        <span class="forecast-detail-label">Updated at</span>
+        <span class="forecast-detail-value">${updatedAtDisplay}</span>
+      </div>
+    `;
+
+    modal.style.display = "block";
   }
 
   function showError(err) {
@@ -309,10 +779,6 @@ document.getElementById("btnOrders").addEventListener("click", async () => {
         pageInfo.textContent = `Page ${currentPage} of ${totalPages}`;
         btnPrev.disabled = currentPage === 1;
         btnNext.disabled = currentPage === totalPages;
-        btnPrev.style.opacity = currentPage === 1 ? "0.5" : "1";
-        btnPrev.style.cursor = currentPage === 1 ? "default" : "pointer";
-        btnNext.style.opacity = currentPage === totalPages ? "0.5" : "1";
-        btnNext.style.cursor = currentPage === totalPages ? "default" : "pointer";
       } else {
         paginationControls.style.display = "none";
       }
@@ -349,17 +815,18 @@ document.getElementById("btnOrders").addEventListener("click", async () => {
       const status = order.order_status || order.payment_status || "-";
 
       tr.innerHTML = `
-        <td>${customerName}</td>
-        <td>${email}</td>
-        <td>${contact}</td>
-        <td>${totalAmount}</td>
-        <td>${status}</td>
-        <td><button class="view-order-btn">View Order</button></td>
+        <td>${escapeHtml(customerName)}</td>
+        <td>${escapeHtml(email)}</td>
+        <td>${escapeHtml(contact)}</td>
+        <td>${escapeHtml(totalAmount)}</td>
+        <td>${escapeHtml(status)}</td>
+        <td><button type="button" class="view-order-btn">View Order</button></td>
       `;
 
-      tr.querySelector('.view-order-btn').addEventListener('click', () => {
-        showOrderPopup(order);
-      });
+      const viewBtn = tr.querySelector(".view-order-btn");
+      if (viewBtn) {
+        viewBtn.addEventListener("click", () => showOrderPopup(order));
+      }
 
       tbody.appendChild(tr);
     });
@@ -368,37 +835,52 @@ document.getElementById("btnOrders").addEventListener("click", async () => {
   }
 
   function showOrderPopup(order) {
-    const modal = document.getElementById('orderModal');
-    const modalContent = document.getElementById('orderDetailsContent');
-    
+    const modal = document.getElementById("orderModal");
+    const modalContent = document.getElementById("orderDetailsContent");
+    if (!modal || !modalContent) {
+      console.error("Order modal markup is missing.");
+      return;
+    }
+
     let itemsHtml = '<p>No items found.</p>';
     if (order.items && order.items.length > 0) {
       itemsHtml = '<table class="data-table"><thead><tr><th>Product</th><th>Quantity</th><th>Price</th><th>Subtotal</th></tr></thead><tbody>';
       order.items.forEach(item => {
+        const label = escapeHtml(item.product_name || item.product_id || "-");
+        const qty = escapeHtml(item.quantity ?? 1);
+        const price = escapeHtml(item.price ?? 0);
+        const sub = escapeHtml(item.subtotal ?? 0);
         itemsHtml += `
           <tr>
-            <td>${item.product_name || item.product_id || '-'}</td>
-            <td>${item.quantity || 1}</td>
-            <td>$${item.price || 0}</td>
-            <td>$${item.subtotal || 0}</td>
+            <td>${label}</td>
+            <td>${qty}</td>
+            <td>$${price}</td>
+            <td>$${sub}</td>
           </tr>
         `;
       });
       itemsHtml += '</tbody></table>';
     }
 
+    const orderId = escapeHtml(order.order_id || "-");
+    const dateStr = escapeHtml(
+      order.createdAt ? new Date(order.createdAt).toLocaleString() : "-",
+    );
+    const shipFee = escapeHtml(order.shipping_fee ?? 0);
+    const addr = escapeHtml(order.customer_info?.delivery_address || "-");
+
     modalContent.innerHTML = `
       <div style="margin-bottom: 16px;">
-        <strong>Order ID:</strong> ${order.order_id || '-'}<br/>
-        <strong>Date:</strong> ${order.createdAt ? new Date(order.createdAt).toLocaleString() : '-'}<br/>
-        <strong>Shipping Fee:</strong> $${order.shipping_fee || 0}<br/>
-        <strong>Delivery Address:</strong> ${order.customer_info?.delivery_address || '-'}<br/>
+        <strong>Order ID:</strong> ${orderId}<br/>
+        <strong>Date:</strong> ${dateStr}<br/>
+        <strong>Shipping Fee:</strong> $${shipFee}<br/>
+        <strong>Delivery Address:</strong> ${addr}<br/>
       </div>
       <h3>Items</h3>
       ${itemsHtml}
     `;
 
-    modal.style.display = 'block';
+    modal.style.display = "block";
   }
 
   // Close modal functionality
@@ -409,12 +891,40 @@ document.getElementById("btnOrders").addEventListener("click", async () => {
     });
   }
 
-  window.addEventListener('click', (event) => {
-    const modal = document.getElementById('orderModal');
-    if (event.target == modal) {
-      modal.style.display = 'none';
+  window.addEventListener("click", (event) => {
+    const orderModal = document.getElementById("orderModal");
+    const forecastDetailModal = document.getElementById("forecastDetailModal");
+    const paymentDetailModal = document.getElementById("paymentDetailModal");
+    if (orderModal && event.target === orderModal) {
+      orderModal.style.display = "none";
+    }
+    if (forecastDetailModal && event.target === forecastDetailModal) {
+      forecastDetailModal.style.display = "none";
+    }
+    if (paymentDetailModal && event.target === paymentDetailModal) {
+      paymentDetailModal.style.display = "none";
     }
   });
+
+  const closeForecastDetailBtn = document.getElementById(
+    "closeForecastDetailModal",
+  );
+  if (closeForecastDetailBtn) {
+    closeForecastDetailBtn.addEventListener("click", () => {
+      const m = document.getElementById("forecastDetailModal");
+      if (m) m.style.display = "none";
+    });
+  }
+
+  const closePaymentDetailBtn = document.getElementById(
+    "closePaymentDetailModal",
+  );
+  if (closePaymentDetailBtn) {
+    closePaymentDetailBtn.addEventListener("click", () => {
+      const m = document.getElementById("paymentDetailModal");
+      if (m) m.style.display = "none";
+    });
+  }
 
   document.getElementById("btnPayments").addEventListener("click", async () => {
   hideForecastHistory();
@@ -422,7 +932,7 @@ document.getElementById("btnOrders").addEventListener("click", async () => {
 
   try {
     const data = await get(`${apiBase}/sales/payments`);
-    show(data);
+    showPayments(data);
   } catch (e) {
     showError(e);
   }
@@ -445,15 +955,9 @@ document.getElementById("btnInventory")
 document.getElementById("btnForecast").addEventListener("click", async () => {
   showLoading("Loading forecast...");
 
-  hideSalesGraph();
-
   try {
     const data = await get(`${apiBase}/forecast/`);
-    show(data);
-
-    const history = document.getElementById("forecastSalesHistory");
-    if (history) history.style.display = "block";
-
+    showForecast(data);
   } catch (e) {
     showError(e);
   }
@@ -468,6 +972,7 @@ document.getElementById("btnForecast").addEventListener("click", async () => {
   function hideSalesGraph() {
     salesGraphContainer.style.display = "none";
     resultEl.style.display = "block";
+    hideForecastHistory();
   }
 
  function processSalesData(orders) {
@@ -617,6 +1122,10 @@ document.getElementById("btnForecast").addEventListener("click", async () => {
     createChart(recentDates, recentData);
     updateStats(processedData);
 
+    const historyEl = document.getElementById("forecastSalesHistory");
+    if (historyEl) historyEl.style.display = "block";
+    loadDailySales();
+
   } catch (error) {
     console.error('Error loading sales graph:', error);
     showError(error);
@@ -626,7 +1135,6 @@ document.getElementById("btnForecast").addEventListener("click", async () => {
 
   // Event listeners for sales graph
 document.getElementById("btnSalesGraph").addEventListener("click", async () => {
-  hideForecastHistory();
   loadSalesGraph();
 });  
   document.getElementById("refreshGraph")?.addEventListener("click", loadSalesGraph);
