@@ -199,14 +199,26 @@ const calculateForecasts = async (uploadedData = null) => {
       graphData: graphData
     });
 
-    if (suggestedPrice !== currentPrice) {
+    const needsPriceChange = suggestedPrice !== currentPrice;
+    const needsRestock = restockAmount > 0;
+
+    // Trigger if subsystem needs to take action
+    if (needsPriceChange || needsRestock) {
       pricingToSave.push({
         productId: product.productId,
+        status: 'Pending Approval',
+
+        // Pricing Payload
         currentPrice: currentPrice,
         suggestedPrice: suggestedPrice,
         elasticityScore: elasticityScore,
         strategyReason: strategyReason,
-        status: 'Pending Approval' 
+        
+        // Restock Payload
+        suggestedRestockQty: restockAmount,
+        restockReason: needsRestock 
+          ? `Forecast predicts stockout. Baseline Demand: ${predictedDemand}, Current Stock: ${product.currentStock}` 
+          : 'Stock adequate'
       });
     }
   });

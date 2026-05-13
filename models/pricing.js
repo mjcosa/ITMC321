@@ -26,7 +26,11 @@ const pricingStrategySchema = new mongoose.Schema({
     type: String, 
     enum: ['Pending Approval', 'Applied', 'Rejected'], 
     default: 'Pending Approval' 
-  }
+  },
+
+  suggestedRestockQty: { type: Number, default: 0 },
+  restockReason: { type: String, default: 'Stock adequate' },
+  
 }, { 
   timestamps: true 
 });
