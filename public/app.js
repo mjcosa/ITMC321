@@ -547,6 +547,18 @@
     return escapeHtml(String(s));
   }
 
+  function paymentMethodDisplay(row) {
+    const m =
+      row.payment_method ??
+      row.paymentMethod ??
+      row.method ??
+      row.payment_type ??
+      row.paymentType ??
+      null;
+    if (m === null || m === undefined || m === "") return "—";
+    return escapeHtml(String(m));
+  }
+
   function showPayments(obj) {
     currentView = "payments";
     hideSalesGraph();
@@ -599,6 +611,7 @@
         <th>Transaction reference</th>
         <th>Payment date</th>
         <th>Amount</th>
+        <th>Payment method</th>
         <th>Status</th>
         <th>Action</th>
       </tr>
@@ -622,6 +635,7 @@
         <td>${escapeHtml(ref)}</td>
         <td>${formatPaymentDateTime(payDate)}</td>
         <td>${paymentAmountDisplay(row)}</td>
+        <td>${paymentMethodDisplay(row)}</td>
         <td>${paymentStatusDisplay(row)}</td>
         <td><button type="button" class="view-payment-detail-btn">View details</button></td>
       `;
@@ -655,6 +669,7 @@
     const paymentDateDisplay = formatPaymentDateTime(
       paymentPaymentDateValue(row),
     );
+    const paymentMethodDetail = paymentMethodDisplay(row);
     const createdAtDisplay = formatPaymentDateTime(
       paymentCreatedAtValue(row),
     );
@@ -670,6 +685,10 @@
       <div class="forecast-detail-field">
         <span class="forecast-detail-label">Payment date</span>
         <span class="forecast-detail-value">${paymentDateDisplay}</span>
+      </div>
+      <div class="forecast-detail-field">
+        <span class="forecast-detail-label">Payment method</span>
+        <span class="forecast-detail-value">${paymentMethodDetail}</span>
       </div>
       <div class="forecast-detail-field">
         <span class="forecast-detail-label">Created at</span>
